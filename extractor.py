@@ -6,11 +6,26 @@ Extracts election results and exit poll data from Wikipedia using OpenAI.
 import csv
 import json
 import re
+from typing import Optional
+
 from dotenv import load_dotenv
+from pydantic import BaseModel
 import requests
 from openai import OpenAI
 
 load_dotenv()  # Load .env file
+
+
+# Pydantic model for structured election metadata extraction
+class ElectionMetadata(BaseModel):
+    election_id: str
+    election_name: str
+    election_date: str
+    election_type: str
+    state: str
+    total_seats: int
+    actual_results: Optional[dict[str, int]]
+
 
 # Party name normalization mapping
 PARTY_ALIASES = {
@@ -372,25 +387,17 @@ def extract_exit_polls_from_table(url: str) -> list:
     return unique_polls
 
 
-METADATA_PROMPT = """Extract election metadata from this Wikipedia page. Return JSON with:
-{
-  "election_id": "state_year format like delhi_2025",
-  "election_name": "full election name",
-  "election_date": "YYYY-MM-DD",
-  "election_type": "state_assembly",
-  "state": "state name",
-  "total_seats": number,
-  "actual_results": {"Party/Alliance": seats_won, ...}
-}
+METADATA_PROMPT = """Extract election metadata from this Wikipedia page about an Indian state assembly election.
 
 For actual_results, use the same party/alliance names as used in exit poll tables on the page.
 For Maharashtra, use "Maha Yuti" and "Maha Vikas Aghadi" as alliance names.
-Return ONLY valid JSON."""
+If results are not yet available, set actual_results to null."""
 
 
-def extract_election_data(url: str, model: str = "gpt-5.2") -> dict:
+def extract_election_data(url: str, model: str = "gpt-4o") -> dict:
     """
     Extract election data using direct HTML parsing for tables + LLM for metadata.
+    Uses OpenAI Structured Outputs with Pydantic for reliable metadata extraction.
     """
     client = OpenAI()
 
@@ -401,25 +408,24 @@ def extract_election_data(url: str, model: str = "gpt-5.2") -> dict:
     exit_polls = extract_exit_polls_from_table(url)
     print(f"  Found {len(exit_polls)} exit polls from tables")
 
-    # Step 2: Use LLM only for election metadata
+    # Step 2: Use LLM with Structured Outputs for election metadata
     page_text = fetch_wikipedia_page(url)
     max_chars = 50000  # Smaller since we only need metadata
     if len(page_text) > max_chars:
         page_text = page_text[:max_chars]
 
-    print(f"  Sending to {model} for metadata extraction...")
+    print(f"  Sending to {model} for metadata extraction (Structured Outputs)...")
 
-    response = client.chat.completions.create(
+    response = client.responses.parse(
         model=model,
-        messages=[
+        input=[
             {"role": "system", "content": METADATA_PROMPT},
             {"role": "user", "content": f"Extract election metadata:\n\n{page_text}"}
         ],
-        response_format={"type": "json_object"},
-        temperature=0
+        text_format=ElectionMetadata,
     )
 
-    election = json.loads(response.choices[0].message.content)
+    election = response.output_parsed.model_dump()
     election["wikipedia_url"] = url
 
     return {
@@ -611,7 +617,7 @@ def compute_accuracy_metrics(election: dict, exit_polls: list) -> list:
     return results
 
 
-def process_election(url: str, model: str = "gpt-5.2") -> dict:
+def process_election(url: str, model: str = "gpt-4o") -> dict:
     """Process a single election and compute metrics."""
     # Extract data
     data = extract_election_data(url, model=model)
