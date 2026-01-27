@@ -2,6 +2,27 @@
 
 Evaluates Indian election pollster accuracy by comparing exit poll predictions against actual results.
 
+## Pollster Rankings (2+ polls)
+
+| Pollster | Polls | Avg Score | Winner Accuracy |
+|----------|-------|-----------|-----------------|
+| India Today-Axis My India | 2 | 1.44 | 50% (1/2) |
+| Axis My India | 4 | 1.16 | 100% (4/4) |
+| Poll Diary | 2 | 1.14 | 100% (2/2) |
+| Today's Chanakya | 2 | 0.73 | 100% (2/2) |
+| Poll of Polls | 3 | 0.60 | 67% (2/3) |
+| JVC | 2 | 0.31 | 100% (2/2) |
+| People's Insight | 6 | 0.22 | 83% (5/6) |
+| Dainik Bhaskar | 4 | 0.09 | 0% (0/4) |
+| Matrize | 4 | 0.05 | 50% (2/4) |
+| Chanakya Strategies | 2 | 0.00 | 50% (1/2) |
+| People's Pulse | 2 | 0.00 | 50% (1/2) |
+| Electoral Edge | 2 | 0.00 | 50% (1/2) |
+| India TV-CNX | 2 | 0.00 | 50% (1/2) |
+| Times Now-ETG | 2 | 0.00 | 50% (1/2) |
+
+**Key finding:** Axis My India leads with 100% winner accuracy across 4 elections and a 1.16 avg score.
+
 ## How It Works
 
 ```
@@ -9,26 +30,16 @@ Wikipedia HTML → BeautifulSoup (tables) + LLM (metadata) → Structured JSON �
 ```
 
 - **BeautifulSoup** parses HTML tables directly (LLMs struggle with table column alignment)
-- **OpenAI API** (gpt-5.2) extracts metadata only (election name, date, actual results)
+- **OpenAI Structured Outputs** with Pydantic extracts election metadata
 
 ## Accuracy Metrics
 
-- **in_range_score**: If actual seats fall within predicted range, score = actual_seats / (max - min). Averaged across parties.
-- **winner_correct**: Did the poll predict the winning party?
+- **Avg Score**: If actual seats fall within predicted range, score = actual_seats / (max - min). Averaged across parties.
+- **Winner Accuracy**: Did the poll predict the winning party?
 
-## Results (7 Elections)
+## Elections Analyzed (7)
 
-| Election | Polls | Winner Accuracy |
-|----------|-------|-----------------|
-| Delhi 2025 | 17 | 82% |
-| Maharashtra 2024 | 13 | 84% |
-| Jharkhand 2024 | 9 | 33% |
-| Haryana 2024 | 8 | 25% |
-| J&K 2024 | 5 | 100% |
-| Karnataka 2023 | - | - |
-| Chhattisgarh 2023 | - | 8% |
-
-**Key insight:** Pollsters struggled most with Haryana 2024 (25%) and Jharkhand 2024 (33%) — surprise results.
+Delhi 2025, Maharashtra 2024, Jharkhand 2024, Haryana 2024, J&K 2024, Karnataka 2023, Chhattisgarh 2023
 
 ## Usage
 
@@ -39,12 +50,6 @@ python extractor.py
 ```
 
 Output: `poll_accuracy.csv`
-
-## Files
-
-- `extractor.py` - Main extraction script
-- `poll_accuracy.csv` - Output data
-- `requirements.txt` - Dependencies
 
 ---
 
