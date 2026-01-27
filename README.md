@@ -6,22 +6,21 @@ Evaluates Indian election pollster accuracy by comparing exit poll predictions a
 
 | Pollster | Polls | Avg Score | Winner Accuracy |
 |----------|-------|-----------|-----------------|
-| India Today-Axis My India | 2 | 1.44 | 50% (1/2) |
-| Axis My India | 4 | 1.16 | 100% (4/4) |
 | Poll Diary | 2 | 1.14 | 100% (2/2) |
-| Today's Chanakya | 2 | 0.73 | 100% (2/2) |
-| Poll of Polls | 3 | 0.60 | 67% (2/3) |
-| JVC | 2 | 0.31 | 100% (2/2) |
-| People's Insight | 6 | 0.22 | 83% (5/6) |
-| Dainik Bhaskar | 4 | 0.09 | 0% (0/4) |
-| Matrize | 4 | 0.05 | 50% (2/4) |
-| Chanakya Strategies | 2 | 0.00 | 50% (1/2) |
-| People's Pulse | 2 | 0.00 | 50% (1/2) |
-| Electoral Edge | 2 | 0.00 | 50% (1/2) |
-| India TV-CNX | 2 | 0.00 | 50% (1/2) |
-| Times Now-ETG | 2 | 0.00 | 50% (1/2) |
+| Matrize | 17 | 0.98 | 47% (8/17) |
+| Jan Ki Baat | 11 | 0.95 | 45% (5/11) |
+| Axis My India | 19 | 0.73 | 78% (15/19) |
+| P-Marq | 9 | 0.72 | 77% (7/9) |
+| Today's Chanakya | 11 | 0.60 | 63% (7/11) |
+| ETG | 13 | 0.57 | 38% (5/13) |
+| People's Pulse | 7 | 0.51 | 71% (5/7) |
+| People's Insight | 8 | 0.50 | 87% (7/8) |
+| Poll of Polls | 6 | 0.39 | 83% (5/6) |
+| CVoter | 17 | 0.24 | 52% (9/17) |
+| Polstrat | 10 | 0.23 | 80% (8/10) |
+| Dainik Bhaskar | 7 | 0.19 | 28% (2/7) |
 
-**Key finding:** Axis My India leads with 100% winner accuracy across 4 elections and a 1.16 avg score.
+**Key finding:** Axis My India leads with 19 polls and 78% winner accuracy. People's Insight has the highest winner accuracy (87%) among pollsters with 5+ polls.
 
 ## How It Works
 
@@ -37,9 +36,13 @@ Wikipedia HTML → BeautifulSoup (tables) + LLM (metadata) → Structured JSON �
 - **Avg Score**: If actual seats fall within predicted range, score = actual_seats / (max - min). Averaged across parties.
 - **Winner Accuracy**: Did the poll predict the winning party?
 
-## Elections Analyzed (7)
+## Elections Analyzed (20)
 
-Delhi 2025, Maharashtra 2024, Jharkhand 2024, Haryana 2024, J&K 2024, Karnataka 2023, Chhattisgarh 2023
+**2024-25:** Delhi, Maharashtra, Jharkhand, Haryana, J&K, Andhra Pradesh, Odisha
+
+**2023:** Karnataka, Chhattisgarh, Rajasthan, Madhya Pradesh, Telangana, Mizoram, Meghalaya, Tripura, Nagaland
+
+**2022:** Gujarat, Himachal Pradesh, Punjab, Uttar Pradesh
 
 ## Usage
 
