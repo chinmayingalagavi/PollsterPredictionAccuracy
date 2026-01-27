@@ -52,16 +52,34 @@ Wikipedia HTML → BeautifulSoup (tables) + LLM (metadata) → Structured JSON �
 | NCP | Nationalist Congress Party |
 | Others | Other, OTHERS, Ind, Independent |
 
-## Elections Processed
+## Elections Processed (22)
 
-1. https://en.wikipedia.org/wiki/2025_Delhi_Legislative_Assembly_election
-2. https://en.wikipedia.org/wiki/2024_Maharashtra_Legislative_Assembly_election
-3. https://en.wikipedia.org/wiki/2024_Jharkhand_Legislative_Assembly_election
-4. https://en.wikipedia.org/wiki/2024_Haryana_Legislative_Assembly_election
-5. https://en.wikipedia.org/wiki/2024_Jammu_and_Kashmir_Legislative_Assembly_election
-6. https://en.wikipedia.org/wiki/2024_Andhra_Pradesh_Legislative_Assembly_election
-7. https://en.wikipedia.org/wiki/2024_Odisha_Legislative_Assembly_election
-8. https://en.wikipedia.org/wiki/2020_Delhi_Legislative_Assembly_election
+Elections are defined in `ELECTIONS` dict in extractor.py with canonical IDs:
+
+| ID | State | Year |
+|----|-------|------|
+| delhi_2025 | Delhi | 2025 |
+| maharashtra_2024 | Maharashtra | 2024 |
+| jharkhand_2024 | Jharkhand | 2024 |
+| haryana_2024 | Haryana | 2024 |
+| jammu_kashmir_2024 | J&K | 2024 |
+| andhra_pradesh_2024 | Andhra Pradesh | 2024 |
+| odisha_2024 | Odisha | 2024 |
+| arunachal_pradesh_2024 | Arunachal Pradesh | 2024 |
+| sikkim_2024 | Sikkim | 2024 |
+| karnataka_2023 | Karnataka | 2023 |
+| chhattisgarh_2023 | Chhattisgarh | 2023 |
+| rajasthan_2023 | Rajasthan | 2023 |
+| madhya_pradesh_2023 | Madhya Pradesh | 2023 |
+| telangana_2023 | Telangana | 2023 |
+| mizoram_2023 | Mizoram | 2023 |
+| meghalaya_2023 | Meghalaya | 2023 |
+| tripura_2023 | Tripura | 2023 |
+| nagaland_2023 | Nagaland | 2023 |
+| gujarat_2022 | Gujarat | 2022 |
+| himachal_pradesh_2022 | Himachal Pradesh | 2022 |
+| punjab_2022 | Punjab | 2022 |
+| uttar_pradesh_2022 | Uttar Pradesh | 2022 |
 
 ## Accuracy Metrics
 
@@ -73,9 +91,16 @@ For each exit poll compute:
 
 - Exit polls vs opinion polls: extract only exit polls (conducted after voting)
 - Range formats vary: "35-40", "35 to 40", "35–40" — normalize to [min, max]
-- Pollster name variations: "India Today-Axis My India" vs "Axis My India" — keep as-is for now
+- Pollster name variations: harmonized via `pollster_harmonize.py`
 
 ## Implementation Notes (Lessons Learned)
+
+### Election IDs
+
+**Always define election IDs explicitly** in the `ELECTIONS` dict rather than relying on LLM-generated IDs. This ensures:
+- Consistent ID format across runs
+- Reliable incremental processing (skip already-processed elections)
+- No ID format mismatches between URL and CSV
 
 ### Wikipedia Table Parsing
 
@@ -84,42 +109,53 @@ For each exit poll compute:
 2. **Table structure varies by election:**
    - Delhi 2025: Party headers in row 1 (row 0 just has "Polling Agency")
    - Maharashtra 2024: Party headers in row 0 with colspan
+   - Nagaland/Meghalaya: Party headers in row 1, row 0 has empty cells
    - Delhi 2020: Multiple exit poll tables on same page
 
 3. **Detect exit poll tables by checking first 2 rows for:**
    - Keywords: "polling", "agency", "pollster"
-   - Party names: "bjp", "aap", "inc", "nda", "maha", etc.
+   - Party names from `party_keywords` list
 
-4. **Alliance/party names to preserve (don't normalize):**
+4. **party_keywords must include regional parties:**
+   - National: bjp, aap, inc, congress, nda, sp, bsp, tmc, ncp
+   - Maharashtra: maha, yuti, vikas
+   - South: ysrcp, tdp, kutami, dmk, aiadmk
+   - East: jmm, bjd, mgb
+   - J&K: jkpdp, jknc, india
+   - **Northeast (critical!):** npp, neda, npf, udp, aitc, ndpp, mnf, zpm, ipft, tipra, vpp
+
+5. **Alliance/party names to preserve (don't normalize):**
    - Maharashtra: "Maha Yuti", "Maha Vikas Aghadi"
    - Andhra Pradesh: "YSRCP", "Kutami" (TDP-led alliance)
    - Jharkhand: "MGB" (JMM-led alliance)
    - J&K: "INDIA" alliance
+   - Nagaland: "NEDA" (North East Democratic Alliance)
+   - Meghalaya: "NPP" (National People's Party)
    - General: "NDA", "BJP+", "INC+"
 
-### API Notes
+### OpenAI API
 
-- Wikipedia blocks requests without User-Agent header
-- Use `{"User-Agent": "ProjectName/1.0 (educational)"}`
-- OpenAI model: gpt-5.2 for metadata extraction
+- **Structured Outputs:** Use `client.responses.parse()` with Pydantic models for reliable metadata extraction
+- **Model:** gpt-5.2 for metadata extraction
+- **Rate limits:** Implement exponential backoff (2^attempt + 1 seconds)
+- Wikipedia blocks requests without User-Agent header: `{"User-Agent": "ProjectName/1.0 (educational)"}`
 
-### Results Summary (8 elections processed)
+### Incremental CSV Processing
 
-| Election | Polls | Winner Accuracy | Notes |
-|----------|-------|-----------------|-------|
-| Delhi 2025 | 17 | 82% (14/17) | BJP surprised |
-| Maharashtra 2024 | 13 | 84% (11/13) | Maha Yuti landslide |
-| Jharkhand 2024 | 9 | 33% (3/9) | MGB won, pollsters failed |
-| Haryana 2024 | 8 | 25% (2/8) | BJP surprise win |
-| J&K 2024 | 5 | 100% (5/5) | INDIA alliance |
-| Andhra Pradesh 2024 | 6 | 66% (4/6) | TDP-led Kutami won |
-| Odisha 2024 | 2 | 50% (1/2) | BJP won |
-| Delhi 2020 | 15 | 100% (15/15) | AAP dominant |
+- `get_processed_elections()` reads existing CSV and returns set of election_ids
+- `append_to_csv()` appends new results one election at a time
+- Match by exact election_id (not URL pattern matching)
+- Always use canonical election IDs from ELECTIONS dict
 
-**Key insight:** Pollsters struggled most with Haryana 2024 (25%) and Jharkhand 2024 (33%) where results surprised everyone.
+### Pollster Name Harmonization
+
+Pollster names vary across elections (e.g., "India Today-Axis My India" vs "Axis My India"). Use `pollster_harmonize.py` module with:
+- `harmonize_pollster(name)` - normalize to canonical name
+- `harmonize_csv_pollsters()` - post-process CSV to harmonize all names
 
 ### Files
 
 - `extractor.py` - Main extraction script
-- `poll_accuracy.csv` - Output data
+- `pollster_harmonize.py` - Pollster name normalization
+- `poll_accuracy.csv` - Output data (178 rows, 22 elections)
 - `.env` - OpenAI API key (not committed)

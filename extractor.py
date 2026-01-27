@@ -6,12 +6,17 @@ Extracts election results and exit poll data from Wikipedia using OpenAI.
 import csv
 import json
 import re
+import time
 from typing import Optional
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
 import requests
-from openai import OpenAI
+from openai import OpenAI, RateLimitError
+
+from pollster_harmonize import harmonize_pollster
+
+MODEL = 'gpt-5.2'
 
 load_dotenv()  # Load .env file
 
@@ -34,8 +39,7 @@ PARTY_ALIASES = {
     "Congress": "INC",
     "CONG": "INC",
     "Aam Aadmi Party": "AAP",
-    "National Democratic Alliance": "BJP",  # NDA → BJP for seat comparison
-    "NDA": "BJP",  # NDA → BJP for seat comparison
+    "National Democratic Alliance": "NDA", 
     "Trinamool Congress": "TMC",
     "AITC": "TMC",
     "Samajwadi Party": "SP",
@@ -44,15 +48,7 @@ PARTY_ALIASES = {
     "Nationalist Congress Party": "NCP",
     "Other": "Others",
     "OTHERS": "Others",
-    "Ind": "Others",
-    "Independent": "Others",
-    # Handle "+" suffixes (used in some Wikipedia tables for alliances)
-    "BJP+": "BJP",
-    "INC+": "INC",
-    "AAP+": "AAP",
-    "TMC+": "TMC",
-    "SP+": "SP",
-    "BSP+": "BSP",
+    "Ind": "Independent"
 }
 
 # Non-pollster rows to filter out
@@ -271,7 +267,8 @@ def extract_exit_polls_from_table(url: str) -> list:
         is_exit_poll_table = (
             ('polling' in first_two_rows_text or 'pollster' in first_two_rows_text or 'agency' in first_two_rows_text) and
             any(x in first_two_rows_text for x in ['bjp', 'aap', 'inc', 'nda', 'maha', 'congress', 'lead',
-                                                    'ysrcp', 'tdp', 'kutami', 'jmm', 'bjd', 'india', 'mgb'])
+                                                    'ysrcp', 'tdp', 'kutami', 'jmm', 'bjd', 'india', 'mgb',
+                                                    'npp', 'neda', 'npf', 'udp', 'mnf', 'zpm', 'tipra'])
         )
 
         if not is_exit_poll_table:
@@ -279,7 +276,9 @@ def extract_exit_polls_from_table(url: str) -> list:
 
         party_keywords = ['bjp', 'aap', 'inc', 'congress', 'nda', 'maha', 'yuti', 'vikas', 'others', 'sp', 'bsp',
                           'ysrcp', 'tdp', 'kutami', 'india', 'jmm', 'bjd', 'rjd', 'jdu', 'tmc', 'dmk', 'aiadmk',
-                          'cpim', 'cpi', 'jkpdp', 'jknc', 'mgb', 'ncp', 'ss', 'shivsena']
+                          'cpim', 'cpi', 'jkpdp', 'jknc', 'mgb', 'ncp', 'ss', 'shivsena',
+                          # Northeast India parties
+                          'npp', 'neda', 'npf', 'udp', 'aitc', 'ndpp', 'mpa', 'vpp', 'mnf', 'zpm', 'ipft', 'tipra']
         subheader_ignore = ['lead', 'margin', 'swing', 'vote share', 'votes', 'vote', '%']
 
         # Identify pollster column from header rows
@@ -394,7 +393,7 @@ For Maharashtra, use "Maha Yuti" and "Maha Vikas Aghadi" as alliance names.
 If results are not yet available, set actual_results to null."""
 
 
-def extract_election_data(url: str, model: str = "gpt-4o") -> dict:
+def extract_election_data(url: str, model: str = MODEL) -> dict:
     """
     Extract election data using direct HTML parsing for tables + LLM for metadata.
     Uses OpenAI Structured Outputs with Pydantic for reliable metadata extraction.
@@ -416,14 +415,24 @@ def extract_election_data(url: str, model: str = "gpt-4o") -> dict:
 
     print(f"  Sending to {model} for metadata extraction (Structured Outputs)...")
 
-    response = client.responses.parse(
-        model=model,
-        input=[
-            {"role": "system", "content": METADATA_PROMPT},
-            {"role": "user", "content": f"Extract election metadata:\n\n{page_text}"}
-        ],
-        text_format=ElectionMetadata,
-    )
+    # Retry with exponential backoff for rate limits
+    for attempt in range(5):
+        try:
+            response = client.responses.parse(
+                model=model,
+                input=[
+                    {"role": "system", "content": METADATA_PROMPT},
+                    {"role": "user", "content": f"Extract election metadata:\n\n{page_text}"}
+                ],
+                text_format=ElectionMetadata,
+            )
+            break
+        except RateLimitError as e:
+            wait_time = 2 ** attempt + 1
+            print(f"  Rate limited, waiting {wait_time}s...")
+            time.sleep(wait_time)
+    else:
+        raise Exception("Failed after 5 retries due to rate limiting")
 
     election = response.output_parsed.model_dump()
     election["wikipedia_url"] = url
@@ -455,6 +464,25 @@ def normalize_party_names(data: dict) -> dict:
                 normalized[normalize(party)] = range_val
             poll["predictions"] = normalized
 
+    return data
+
+
+def harmonize_pollster_names(data: dict) -> dict:
+    """Harmonize pollster names via a manual alias dictionary."""
+    exit_polls = data.get("exit_polls", [])
+    for poll in exit_polls:
+        poll["pollster"] = harmonize_pollster(poll.get("pollster", ""))
+
+    # Deduplicate again after harmonization (keep first occurrence).
+    seen = set()
+    unique = []
+    for poll in exit_polls:
+        key = poll.get("pollster", "").lower().strip()
+        if key and key not in seen:
+            seen.add(key)
+            unique.append(poll)
+
+    data["exit_polls"] = unique
     return data
 
 
@@ -617,11 +645,15 @@ def compute_accuracy_metrics(election: dict, exit_polls: list) -> list:
     return results
 
 
-def process_election(url: str, model: str = "gpt-4o") -> dict:
+def process_election(election_id: str, url: str, model: str = MODEL) -> dict:
     """Process a single election and compute metrics."""
     # Extract data
     data = extract_election_data(url, model=model)
     data = normalize_party_names(data)
+    data = harmonize_pollster_names(data)
+
+    # Override LLM-generated election_id with our canonical ID
+    data["election"]["election_id"] = election_id
 
     # Expand point estimates to ranges based on average width
     data["exit_polls"] = expand_point_estimates(data.get("exit_polls", []))
@@ -665,6 +697,94 @@ def print_results(result: dict):
         print(f"    Party Scores: {json.dumps({k: round(v, 4) for k, v in metric['party_scores'].items()}, indent=6)}")
 
 
+def get_processed_elections(filename: str = "poll_accuracy.csv") -> set:
+    """Get set of election URLs already processed in the CSV."""
+    import os
+    if not os.path.exists(filename):
+        return set()
+
+    processed = set()
+    with open(filename, "r") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            # Extract election identifier from the data
+            election_id = row.get("election_id", "")
+            if election_id:
+                processed.add(election_id)
+    return processed
+
+
+def append_to_csv(result: dict, filename: str = "poll_accuracy.csv"):
+    """Append a single election result to CSV."""
+    import os
+
+    election = result["election"]
+    rows = []
+
+    for metric in result["metrics"]:
+        poll_data = next(
+            (p for p in result["exit_polls"] if p["pollster"] == metric["pollster"]),
+            {}
+        )
+        predictions = poll_data.get("predictions", {})
+
+        rows.append({
+            "election_id": election["election_id"],
+            "election_name": election["election_name"],
+            "election_date": election["election_date"],
+            "state": election["state"],
+            "total_seats": election["total_seats"],
+            "pollster": metric["pollster"],
+            "in_range_score": metric["in_range_score"],
+            "winner_correct": metric["winner_correct"],
+            "predicted_winner": metric["predicted_winner"],
+            "actual_winner": metric["actual_winner"],
+            "predictions_json": json.dumps(predictions),
+            "actual_results_json": json.dumps(election.get("actual_results", {})),
+        })
+
+    if not rows:
+        return
+
+    file_exists = os.path.exists(filename)
+    with open(filename, "a", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=rows[0].keys())
+        if not file_exists:
+            writer.writeheader()
+        writer.writerows(rows)
+    print(f"  Appended {len(rows)} rows to {filename}")
+
+
+def harmonize_csv_pollsters(filename: str = "poll_accuracy.csv"):
+    """Harmonize pollster names in an existing CSV in-place."""
+    import os
+    if not os.path.exists(filename):
+        return
+
+    with open(filename, "r", newline="") as f:
+        reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames
+        rows = list(reader)
+
+    if not rows or not fieldnames or "pollster" not in fieldnames:
+        return
+
+    changed = 0
+    for row in rows:
+        original = row.get("pollster", "")
+        canonical = harmonize_pollster(original)
+        if canonical != original:
+            row["pollster"] = canonical
+            changed += 1
+
+    with open(filename, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    print(f"Harmonized pollster names in {filename} ({changed} row changes)")
+
+
 def save_to_csv(all_results: list, filename: str = "poll_accuracy.csv"):
     """Save all election results to CSV."""
     rows = []
@@ -701,29 +821,63 @@ def save_to_csv(all_results: list, filename: str = "poll_accuracy.csv"):
         print(f"\nSaved {len(rows)} rows to {filename}")
 
 
-ELECTIONS = [
+# Election ID -> Wikipedia URL mapping
+ELECTIONS = {
     # 2025
-    "https://en.wikipedia.org/wiki/2025_Delhi_Legislative_Assembly_election",
+    "delhi_2025": "https://en.wikipedia.org/wiki/2025_Delhi_Legislative_Assembly_election",
     # 2024
-    "https://en.wikipedia.org/wiki/2024_Maharashtra_Legislative_Assembly_election",
-    "https://en.wikipedia.org/wiki/2024_Jharkhand_Legislative_Assembly_election",
-    "https://en.wikipedia.org/wiki/2024_Haryana_Legislative_Assembly_election",
-    "https://en.wikipedia.org/wiki/2024_Jammu_and_Kashmir_Legislative_Assembly_election",
+    "maharashtra_2024": "https://en.wikipedia.org/wiki/2024_Maharashtra_Legislative_Assembly_election",
+    "jharkhand_2024": "https://en.wikipedia.org/wiki/2024_Jharkhand_Legislative_Assembly_election",
+    "haryana_2024": "https://en.wikipedia.org/wiki/2024_Haryana_Legislative_Assembly_election",
+    "jammu_kashmir_2024": "https://en.wikipedia.org/wiki/2024_Jammu_and_Kashmir_Legislative_Assembly_election",
+    "andhra_pradesh_2024": "https://en.wikipedia.org/wiki/2024_Andhra_Pradesh_Legislative_Assembly_election",
+    "odisha_2024": "https://en.wikipedia.org/wiki/2024_Odisha_Legislative_Assembly_election",
+    "arunachal_pradesh_2024": "https://en.wikipedia.org/wiki/2024_Arunachal_Pradesh_Legislative_Assembly_election",
+    "sikkim_2024": "https://en.wikipedia.org/wiki/2024_Sikkim_Legislative_Assembly_election",
     # 2023
-    "https://en.wikipedia.org/wiki/2023_Karnataka_Legislative_Assembly_election",
-    "https://en.wikipedia.org/wiki/2023_Chhattisgarh_Legislative_Assembly_election",
-]
+    "karnataka_2023": "https://en.wikipedia.org/wiki/2023_Karnataka_Legislative_Assembly_election",
+    "chhattisgarh_2023": "https://en.wikipedia.org/wiki/2023_Chhattisgarh_Legislative_Assembly_election",
+    "rajasthan_2023": "https://en.wikipedia.org/wiki/2023_Rajasthan_Legislative_Assembly_election",
+    "madhya_pradesh_2023": "https://en.wikipedia.org/wiki/2023_Madhya_Pradesh_Legislative_Assembly_election",
+    "telangana_2023": "https://en.wikipedia.org/wiki/2023_Telangana_Legislative_Assembly_election",
+    "mizoram_2023": "https://en.wikipedia.org/wiki/2023_Mizoram_Legislative_Assembly_election",
+    "meghalaya_2023": "https://en.wikipedia.org/wiki/2023_Meghalaya_Legislative_Assembly_election",
+    "tripura_2023": "https://en.wikipedia.org/wiki/2023_Tripura_Legislative_Assembly_election",
+    "nagaland_2023": "https://en.wikipedia.org/wiki/2023_Nagaland_Legislative_Assembly_election",
+    # 2022
+    "gujarat_2022": "https://en.wikipedia.org/wiki/2022_Gujarat_Legislative_Assembly_election",
+    "himachal_pradesh_2022": "https://en.wikipedia.org/wiki/2022_Himachal_Pradesh_Legislative_Assembly_election",
+    "punjab_2022": "https://en.wikipedia.org/wiki/2022_Punjab_Legislative_Assembly_election",
+    "uttar_pradesh_2022": "https://en.wikipedia.org/wiki/2022_Uttar_Pradesh_Legislative_Assembly_election",
+}
 
 
 if __name__ == "__main__":
-    all_results = []
+    # Check which elections are already processed
+    processed = get_processed_elections()
+    print(f"Already processed: {len(processed)} elections")
+    if processed:
+        print(f"  IDs: {processed}")
 
-    for url in ELECTIONS:
+    for election_id, url in ELECTIONS.items():
         print(f"\n{'='*60}")
-        print(f"Processing: {url}")
-        result = process_election(url)
-        all_results.append(result)
-        print_results(result)
+        print(f"Processing: {election_id}")
 
-    save_to_csv(all_results)
+        # Check if already processed (exact ID match)
+        if election_id in processed:
+            print(f"  Skipping - already processed")
+            continue
+
+        try:
+            result = process_election(election_id, url)
+            print_results(result)
+            append_to_csv(result)
+            # Add to processed set so we don't re-process
+            processed.add(election_id)
+        except Exception as e:
+            print(f"  ERROR: {e}")
+            continue
+
+    # Ensure pollster names are harmonized even for previously appended rows.
+    harmonize_csv_pollsters()
     print("\nDone!")
