@@ -6,24 +6,29 @@ This was viberesearched and vibecoded with Claude Code Opus 4.5. I used it both 
 
 See ```exitpoll_accuracy.csv``` for raw data scraped from Wikipedia.
 
-**What are exit polls?** Exit polls are surveys conducted immediately after voters leave polling stations on election day. They are published after voting ends but before official results are announced. This dataset measures how accurately these exit polling agencies predicted the actual election outcomes.
+## Notes
+I had to manually do some harmonizing, so there may be errors. Not all pollsters' forecasts may have been logged on Wikipedia, so they would not show up here.
 
-**Dataset**: 230 exit polls across 29 state legislative assembly elections (2020-2025)
+If there are any errors, let me know.
+
+## What are exit polls? Exit polls are surveys conducted immediately after voters leave polling stations on election day. They are published after voting ends but before official results are announced. This dataset measures how accurately these exit polling agencies predicted the actual election outcomes.
+
+**Dataset**: 240 exit polls across 30 state legislative assembly elections (2020-2025)
 
 ## Best Pollsters by Interval Score (min 5 polls)
 
 | Rank | Pollster | Polls | Avg intervalscore |
 |------|----------|-------|-------------------|
 | 1 | Today's Chanakya | 17 | 0.233 |
-| 2 | Axis My India | 28 | 0.236 |
-| 3 | Poll of Polls | 12 | 0.244 |
+| 2 | Poll of Polls | 12 | 0.244 |
+| 3 | Axis My India | 29 | 0.254 |
 | 4 | CNX | 14 | 0.274 |
-| 5 | People's Insight | 8 | 0.286 |
-| 6 | CVoter | 22 | 0.306 |
-| 7 | P-Marq | 18 | 0.308 |
-| 8 | Jan Ki Baat | 18 | 0.310 |
+| 5 | CVoter | 22 | 0.306 |
+| 6 | Jan Ki Baat | 18 | 0.310 |
+| 7 | P-Marq | 19 | 0.321 |
+| 8 | People's Insight | 9 | 0.324 |
 | 9 | Polstrat | 12 | 0.341 |
-| 10 | Matrize | 16 | 0.386 |
+| 10 | Matrize | 17 | 0.390 |
 
 Lower is better. The Winkler interval score penalizes both wide ranges and predictions that miss the actual result. This is my preferred metric.
 
@@ -31,16 +36,16 @@ Lower is better. The Winkler interval score penalizes both wide ranges and predi
 
 | Rank | Pollster | Polls | Avg abserror |
 |------|----------|-------|--------------|
-| 1 | Axis My India | 28 | 0.0631 |
-| 2 | Today's Chanakya | 17 | 0.0649 |
+| 1 | Today's Chanakya | 17 | 0.0649 |
+| 2 | Axis My India | 29 | 0.0662 |
 | 3 | Poll of Polls | 12 | 0.0693 |
 | 4 | CNX | 14 | 0.0731 |
-| 5 | People's Insight | 8 | 0.0798 |
-| 6 | P-Marq | 18 | 0.0812 |
-| 7 | CVoter | 22 | 0.0815 |
-| 8 | Jan Ki Baat | 18 | 0.0815 |
+| 5 | CVoter | 22 | 0.0815 |
+| 6 | Jan Ki Baat | 18 | 0.0815 |
+| 7 | P-Marq | 19 | 0.0829 |
+| 8 | People's Insight | 9 | 0.0851 |
 | 9 | Polstrat | 12 | 0.0880 |
-| 10 | Matrize | 16 | 0.0993 |
+| 10 | Matrize | 17 | 0.0990 |
 
 Lower is better. Measures average distance to correct number of seats |midpoint - actual| / total_seats across parties.
 
@@ -48,14 +53,14 @@ Lower is better. Measures average distance to correct number of seats |midpoint 
 
 | Rank | Pollster | Polls | Winner Correct |
 |------|----------|-------|----------------|
-| 1 | People's Insight | 8 | 87.5% |
-| 2 | P-Marq | 18 | 83.3% |
+| 1 | People's Insight | 9 | 88.9% |
+| 2 | P-Marq | 19 | 84.2% |
 | 3 | Poll of Polls | 12 | 83.3% |
-| 4 | Axis My India | 28 | 82.1% |
+| 4 | Axis My India | 29 | 82.8% |
 | 5 | CNX | 14 | 78.6% |
 | 6 | Today's Chanakya | 17 | 76.5% |
 | 7 | Polstrat | 12 | 75.0% |
-| 8 | Matrize | 16 | 68.8% |
+| 8 | Matrize | 17 | 70.6% |
 | 9 | Jan Ki Baat | 18 | 66.7% |
 | 10 | CVoter | 22 | 63.6% |
 
@@ -100,7 +105,7 @@ Aggregated as `(1 / (total_seats × num_parties)) × sum(scores)`. Lower is bett
 
 | Year | Elections |
 |------|-----------|
-| 2025 | Delhi |
+| 2025 | Bihar, Delhi |
 | 2024 | Maharashtra, Jharkhand, Haryana, J&K, Andhra Pradesh, Odisha |
 | 2023 | Karnataka, Chhattisgarh, Rajasthan, MP, Telangana, Mizoram, Meghalaya, Tripura, Nagaland |
 | 2022 | Gujarat, Himachal Pradesh, Punjab, UP, Goa, Uttarakhand, Manipur |

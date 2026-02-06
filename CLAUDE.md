@@ -12,7 +12,7 @@ Measure how accurately Indian exit polls predict election outcomes, identify whi
 |------|-------------|---------------------|
 | `README.md` | Public-facing results and methodology | Yes |
 | `CLAUDE.md` | This documentation (for Claude) | Yes |
-| `exitpoll_accuracy.csv` | Raw transcribed exit poll data (230 rows) | **Yes - source of truth** |
+| `exitpoll_accuracy.csv` | Raw transcribed exit poll data (240 rows) | **Yes - source of truth** |
 | `process_polls.py` | Processing script to generate harmonized CSV | Yes |
 | `exitpoll_accuracy_harmonized.csv` | Generated output with scores | **No - regenerate instead** |
 | `old/` | Archived original code-based extraction | No |
@@ -104,7 +104,7 @@ Run: `python3 process_polls.py`
 
 | Year | Elections |
 |------|-----------|
-| 2025 | Delhi |
+| 2025 | Bihar, Delhi |
 | 2024 | Maharashtra, Jharkhand, Haryana, J&K, Andhra Pradesh, Odisha |
 | 2023 | Karnataka, Chhattisgarh, Rajasthan, MP, Telangana, Mizoram, Meghalaya, Tripura, Nagaland |
 | 2022 | Gujarat, Himachal Pradesh, Punjab, UP, Goa, Uttarakhand, Manipur |

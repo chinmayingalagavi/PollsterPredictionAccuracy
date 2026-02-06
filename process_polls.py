@@ -43,6 +43,7 @@ POLLSTER_ALIASES: dict[str, str] = {
     "Zee News-Matrize": "Matrize",
     "Republic TV -Matrize": "Matrize",
     "Republic TV-Matrize": "Matrize",
+    "IANS-Matrize": "Matrize",
     # P-Marq
     "P Marq": "P-Marq",
     "P-MARQ": "P-Marq",
@@ -81,6 +82,7 @@ POLLSTER_ALIASES: dict[str, str] = {
     "Times Now – ETG": "ETG",
     # Veto
     "Times Now -Veto": "Veto",
+    "Times Now-Veto": "Veto",
     "Times Now – VETO": "Veto",
     # People's Pulse
     "People's Pulse - Codemo": "People's Pulse",
