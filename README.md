@@ -4,6 +4,8 @@ There are a lot of pollsters in India that present their projections of election
 
 This was viberesearched and vibecoded with Claude Code Opus 4.5. I used it both for research/scraping and for processing. All errors are either Claude's or mine.
 
+See ```exitpoll_accuracy.csv``` for raw data scraped from Wikipedia.
+
 **What are exit polls?** Exit polls are surveys conducted immediately after voters leave polling stations on election day. They are published after voting ends but before official results are announced. This dataset measures how accurately these exit polling agencies predicted the actual election outcomes.
 
 **Dataset**: 230 exit polls across 29 state legislative assembly elections (2020-2025)

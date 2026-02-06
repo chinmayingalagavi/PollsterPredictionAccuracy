@@ -10,11 +10,11 @@ Measure how accurately Indian exit polls predict election outcomes, identify whi
 
 | File | Description | Editable by Claude? |
 |------|-------------|---------------------|
-| `CLAUDE.md` | This documentation | Yes |
+| `README.md` | Public-facing results and methodology | Yes |
+| `CLAUDE.md` | This documentation (for Claude) | Yes |
 | `exitpoll_accuracy.csv` | Raw transcribed exit poll data (230 rows) | **Yes - source of truth** |
 | `process_polls.py` | Processing script to generate harmonized CSV | Yes |
 | `exitpoll_accuracy_harmonized.csv` | Generated output with scores | **No - regenerate instead** |
-| `MANUAL_RESULTS.md` | Summary of key findings and pollster rankings | Yes |
 | `old/` | Archived original code-based extraction | No |
 
 ## Data Schema
@@ -99,14 +99,6 @@ Run: `python3 process_polls.py`
 - **winner_correct**: Binary (1/0) - did the poll correctly predict which party would win the most seats?
 
 - **abserror**: Average of `|midpoint - actual| / total_seats` across parties. Lower is better. Measures how close seat predictions were to actual results, normalized by legislature size. A value of 0.05 means predictions are off by 5% of total seats on average.
-
-## Current Dataset Statistics
-
-- **230 exit polls** across **29 elections** (2020-2025)
-- **35 unique pollsters** (after harmonization)
-- **70.0% winner prediction accuracy**
-- **0.23 average intervalscore** (lower is better)
-- **0.0899 average abserror** (predictions off by ~9% of total seats on average)
 
 ### Elections Covered
 
