@@ -94,7 +94,7 @@ Run: `python3 process_polls.py`
 
 ### Accuracy Metrics
 
-- **intervalscore**: Winkler interval score. For each party that won ≥1 seat: if actual is in range, score = width; if outside, score = width + (2/α)×distance. Aggregated as `(1 / (total_seats × num_parties)) × sum(scores)`. Lower is better. Penalizes wide ranges and misses. Uses α=0.9 by default.
+- **intervalscore**: Winkler interval score. For each party that won ≥1 seat: if actual is in range, score = width; if outside, score = width + (2/α)×distance. Aggregated as `(1 / (total_seats × num_parties)) × sum(scores)`. Lower is better. Penalizes wide ranges and misses. Uses α=0.5 by default.
 
 - **winner_correct**: Binary (1/0) - did the poll correctly predict which party would win the most seats?
 

@@ -1,42 +1,29 @@
 # Indian State Election Exit Poll Accuracy Analysis
 
+There are a lot of pollsters in India that present their projections of elections. I wanted to have a metric to understand whom to believe, and to create a record that holds them accountable. I might eventually do this for opinion polls, but for now these are exit polls only.
+
+This was viberesearched and vibecoded with Claude Code Opus 4.5. I used it both for research/scraping and for processing. All errors are either Claude's or mine.
+
 **What are exit polls?** Exit polls are surveys conducted immediately after voters leave polling stations on election day. They are published after voting ends but before official results are announced. This dataset measures how accurately these exit polling agencies predicted the actual election outcomes.
 
 **Dataset**: 230 exit polls across 29 state legislative assembly elections (2020-2025)
-
-## Best Pollsters by Winner Prediction (min 5 polls)
-
-| Rank | Pollster | Polls | Winner Correct |
-|------|----------|-------|----------------|
-| 1 | People's Insight | 8 | 87.5% |
-| 2 | P-Marq | 18 | 83.3% |
-| 3 | Poll of Polls | 12 | 83.3% |
-| 4 | Axis My India | 28 | 82.1% |
-| 5 | CNX | 14 | 78.6% |
-| 6 | Today's Chanakya | 17 | 76.5% |
-| 7 | Polstrat | 12 | 75.0% |
-| 8 | Matrize | 16 | 68.8% |
-| 9 | Jan Ki Baat | 18 | 66.7% |
-| 10 | CVoter | 22 | 63.6% |
-
-Winner prediction = correctly predicting the party/alliance that would win the most seats.
 
 ## Best Pollsters by Interval Score (min 5 polls)
 
 | Rank | Pollster | Polls | Avg intervalscore |
 |------|----------|-------|-------------------|
-| 1 | Today's Chanakya | 17 | 0.161 |
-| 2 | Poll of Polls | 12 | 0.166 |
-| 3 | Axis My India | 28 | 0.170 |
-| 4 | CNX | 14 | 0.181 |
-| 5 | People's Insight | 8 | 0.188 |
-| 6 | P-Marq | 18 | 0.201 |
-| 7 | CVoter | 22 | 0.202 |
-| 8 | Jan Ki Baat | 18 | 0.209 |
-| 9 | Polstrat | 12 | 0.210 |
-| 10 | Matrize | 16 | 0.242 |
+| 1 | Today's Chanakya | 17 | 0.233 |
+| 2 | Axis My India | 28 | 0.236 |
+| 3 | Poll of Polls | 12 | 0.244 |
+| 4 | CNX | 14 | 0.274 |
+| 5 | People's Insight | 8 | 0.286 |
+| 6 | CVoter | 22 | 0.306 |
+| 7 | P-Marq | 18 | 0.308 |
+| 8 | Jan Ki Baat | 18 | 0.310 |
+| 9 | Polstrat | 12 | 0.341 |
+| 10 | Matrize | 16 | 0.386 |
 
-Lower is better. The Winkler interval score penalizes both wide ranges and predictions that miss the actual result.
+Lower is better. The Winkler interval score penalizes both wide ranges and predictions that miss the actual result. This is my preferred metric.
 
 ## Best Pollsters by Abserror (min 5 polls)
 
@@ -55,13 +42,30 @@ Lower is better. The Winkler interval score penalizes both wide ranges and predi
 
 Lower is better. Measures average distance to correct number of seats |midpoint - actual| / total_seats across parties.
 
+## Best Pollsters by Winner Prediction (min 5 polls)
+
+| Rank | Pollster | Polls | Winner Correct |
+|------|----------|-------|----------------|
+| 1 | People's Insight | 8 | 87.5% |
+| 2 | P-Marq | 18 | 83.3% |
+| 3 | Poll of Polls | 12 | 83.3% |
+| 4 | Axis My India | 28 | 82.1% |
+| 5 | CNX | 14 | 78.6% |
+| 6 | Today's Chanakya | 17 | 76.5% |
+| 7 | Polstrat | 12 | 75.0% |
+| 8 | Matrize | 16 | 68.8% |
+| 9 | Jan Ki Baat | 18 | 66.7% |
+| 10 | CVoter | 22 | 63.6% |
+
+Winner prediction = correctly predicting the party/alliance that would win the most seats.
+
 ---
 
 ## Methodology
 
 ### Data Collection
 
-Exit poll predictions were manually transcribed from Wikipedia pages for each state election. Each row contains:
+Exit poll predictions were manually transcribed from Wikipedia pages for each state election. Done manually by Claude! Each row contains:
 - The pollster name (e.g., "India Today-Axis My India")
 - Seat predictions as ranges `[min, max]` for each party
 - Actual election results
@@ -82,7 +86,9 @@ Run `python3 process_polls.py` to generate scores. The script:
 - If actual is in predicted range: `score = width`
 - If actual is outside range: `score = width + (2/α) × distance`
 
-Aggregated as `(1 / (total_seats × num_parties)) × sum(scores)`. Uses α=0.9. Lower is better - penalizes both wide ranges and misses.
+This is a 'proper scoring rule', assuming pollsters aim to publish (1-α) confidence intervals. In the scoring above I used α=0.5. So pollsters are assumed to be targeting 50% coverage - i.e., they expect to be within range half the time. (In practice, they're within range only 38% of the time.)
+
+Aggregated as `(1 / (total_seats × num_parties)) × sum(scores)`. Lower is better - penalizes both wide ranges and misses.
 
 **Abserror**: Average of `|midpoint - actual| / total_seats` across parties. A value of 0.06 means predictions are off by 6% of total seats on average.
 

@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 
 # Interval score parameter - controls penalty for being outside range
-ALPHA = 0.9
+ALPHA = 0.5
 
 # Pollster name harmonization mappings
 POLLSTER_ALIASES: dict[str, str] = {
@@ -367,21 +367,6 @@ def main():
     min_polls = 5
     qualified = {p: d for p, d in pollster_data.items() if d["polls"] >= min_polls}
 
-    # Best by winner prediction
-    print(f"\n{'='*60}")
-    print(f"BEST POLLSTERS BY WINNER PREDICTION (min {min_polls} polls)")
-    print(f"{'='*60}")
-    by_winner = sorted(
-        qualified.items(),
-        key=lambda x: x[1]["winner_correct"] / x[1]["polls"],
-        reverse=True
-    )
-    print(f"{'Rank':<6}{'Pollster':<25}{'Polls':<8}{'Winner %':<10}")
-    print("-" * 49)
-    for i, (pollster, data) in enumerate(by_winner[:10], 1):
-        pct = 100 * data["winner_correct"] / data["polls"]
-        print(f"{i:<6}{pollster:<25}{data['polls']:<8}{pct:.1f}%")
-
     # Best by interval score
     print(f"\n{'='*60}")
     print(f"BEST POLLSTERS BY INTERVAL SCORE (min {min_polls} polls)")
@@ -409,6 +394,21 @@ def main():
     for i, (pollster, data) in enumerate(by_abserror[:10], 1):
         avg = data["abserror_sum"] / data["polls"]
         print(f"{i:<6}{pollster:<25}{data['polls']:<8}{avg:.4f}")
+
+    # Best by winner prediction
+    print(f"\n{'='*60}")
+    print(f"BEST POLLSTERS BY WINNER PREDICTION (min {min_polls} polls)")
+    print(f"{'='*60}")
+    by_winner = sorted(
+        qualified.items(),
+        key=lambda x: x[1]["winner_correct"] / x[1]["polls"],
+        reverse=True
+    )
+    print(f"{'Rank':<6}{'Pollster':<25}{'Polls':<8}{'Winner %':<10}")
+    print("-" * 49)
+    for i, (pollster, data) in enumerate(by_winner[:10], 1):
+        pct = 100 * data["winner_correct"] / data["polls"]
+        print(f"{i:<6}{pollster:<25}{data['polls']:<8}{pct:.1f}%")
 
 
 if __name__ == "__main__":
