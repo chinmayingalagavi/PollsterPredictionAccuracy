@@ -1,161 +1,150 @@
-# Indian Election Poll Accuracy Tracker
+# Indian State Election Exit Poll Accuracy Dataset
 
-## Goal
+This project tracks the accuracy of **exit polls** for Indian state legislative assembly elections. Exit polls are surveys conducted immediately after voters leave polling stations, published before official results are announced (typically 1-3 days before counting).
 
-Evaluate Indian election pollster accuracy by comparing exit poll predictions against actual results.
+## Project Goal
 
-## Architecture
+Measure how accurately Indian exit polls predict election outcomes, identify which pollsters are most reliable, and understand when/why exit polls fail.
 
-```
-Wikipedia HTML → BeautifulSoup (tables) + LLM (metadata) → Structured JSON → CSV
-```
+## Files
 
-**Key learning:** LLMs struggle with table column alignment. Direct HTML table parsing with BeautifulSoup is more reliable for extracting exit poll data. Use LLM only for unstructured metadata (election name, date, actual results).
+| File | Description | Editable by Claude? |
+|------|-------------|---------------------|
+| `CLAUDE.md` | This documentation | Yes |
+| `exitpoll_accuracy.csv` | Raw transcribed exit poll data (230 rows) | **Yes - source of truth** |
+| `process_polls.py` | Processing script to generate harmonized CSV | Yes |
+| `exitpoll_accuracy_harmonized.csv` | Generated output with scores | **No - regenerate instead** |
+| `MANUAL_RESULTS.md` | Summary of key findings and pollster rankings | Yes |
+| `old/` | Archived original code-based extraction | No |
 
 ## Data Schema
 
-### Election
-```json
-{
-  "election_id": "delhi_2025",
-  "election_name": "2025 Delhi Legislative Assembly election",
-  "election_date": "2025-02-05",
-  "election_type": "state_assembly",
-  "state": "Delhi",
-  "total_seats": 70,
-  "wikipedia_url": "...",
-  "actual_results": {"BJP": 48, "AAP": 22, "INC": 0}
-}
+### exitpoll_accuracy.csv (input)
+
+```csv
+election_id,election_name,election_date,state,total_seats,pollster,predictions_json,actual_results_json
 ```
 
-### ExitPoll
-```json
-{
-  "election_id": "delhi_2025",
-  "pollster": "Axis My India",
-  "predictions": {"BJP": [45, 55], "AAP": [15, 25], "INC": [0, 1]}
-}
-```
+- **election_id**: Unique identifier like `delhi_2025`, `maharashtra_2024`
+- **election_date**: Date results were announced (YYYY-MM-DD)
+- **predictions_json**: `{"Party": [min, max], ...}` - single values as `[x, x]`
+- **actual_results_json**: `{"Party": seats, ...}`
 
-## Party Name Normalization
+### exitpoll_accuracy_harmonized.csv (output)
 
-| Canonical | Aliases |
-|-----------|---------|
+Additional columns added by `process_polls.py`:
+
+| Column | Description |
+|--------|-------------|
+| pollster_harmonized | Canonical pollster name (e.g., "Axis My India" not "India Today-Axis My India") |
+| predictions_json_harmonized | Predictions with single values expanded to ranges |
+| intervalscore | Winkler interval score, normalized (lower = better) |
+| winner_correct | 1 if predicted winner matches actual, 0 otherwise |
+| abserror | Avg of |midpoint - actual| / total_seats across parties (lower = better) |
+| predicted_winner | Party with highest midpoint in predictions |
+| actual_winner | Party with most seats |
+
+## How to Add New Elections
+
+1. Find the Wikipedia page for the election (e.g., "2024 Maharashtra Legislative Assembly election")
+2. Download HTML: `curl -A "Mozilla/5.0" "URL" > /tmp/election.html`
+3. Read the HTML and find the exit poll table
+4. Transcribe each pollster's predictions into CSV format
+5. Append rows to `exitpoll_accuracy.csv`
+6. Run `python3 process_polls.py` to regenerate harmonized output
+
+### Transcription Rules
+
+- **Ranges**: "35-40", "35 to 40", "35–40" all become `[35, 40]`
+- **Single values**: "54" becomes `[54, 54]`
+- **Party names**: Use shortened forms (BJP, INC, AAP) not full names
+- **Alliances**: Use the alliance name from Wikipedia (NDA, UPA, INDIA, etc.)
+- **Others**: Group small parties/independents as "Others" when Wikipedia does
+
+### Party Name Shortening
+
+| Short | Full Name |
+|-------|-----------|
 | BJP | Bharatiya Janata Party |
-| INC | Congress, Indian National Congress, CONG |
+| INC | Indian National Congress |
 | AAP | Aam Aadmi Party |
-| NDA | National Democratic Alliance |
-| TMC | Trinamool Congress, AITC |
+| TMC/AITC | Trinamool Congress |
 | SP | Samajwadi Party |
 | BSP | Bahujan Samaj Party |
-| SS | Shiv Sena (for Maharashtra) |
-| NCP | Nationalist Congress Party |
-| Others | Other, OTHERS, Ind, Independent |
+| BJD | Biju Janata Dal |
+| BRS | Bharat Rashtra Samithi |
+| NDA | National Democratic Alliance (BJP-led) |
+| UPA | United Progressive Alliance (INC-led) |
+| INDIA | Indian National Developmental Inclusive Alliance |
 
-## Elections Processed (22)
+## Processing Script
 
-Elections are defined in `ELECTIONS` dict in extractor.py with canonical IDs:
+Run: `python3 process_polls.py`
 
-| ID | State | Year |
-|----|-------|------|
-| delhi_2025 | Delhi | 2025 |
-| maharashtra_2024 | Maharashtra | 2024 |
-| jharkhand_2024 | Jharkhand | 2024 |
-| haryana_2024 | Haryana | 2024 |
-| jammu_kashmir_2024 | J&K | 2024 |
-| andhra_pradesh_2024 | Andhra Pradesh | 2024 |
-| odisha_2024 | Odisha | 2024 |
-| arunachal_pradesh_2024 | Arunachal Pradesh | 2024 |
-| sikkim_2024 | Sikkim | 2024 |
-| karnataka_2023 | Karnataka | 2023 |
-| chhattisgarh_2023 | Chhattisgarh | 2023 |
-| rajasthan_2023 | Rajasthan | 2023 |
-| madhya_pradesh_2023 | Madhya Pradesh | 2023 |
-| telangana_2023 | Telangana | 2023 |
-| mizoram_2023 | Mizoram | 2023 |
-| meghalaya_2023 | Meghalaya | 2023 |
-| tripura_2023 | Tripura | 2023 |
-| nagaland_2023 | Nagaland | 2023 |
-| gujarat_2022 | Gujarat | 2022 |
-| himachal_pradesh_2022 | Himachal Pradesh | 2022 |
-| punjab_2022 | Punjab | 2022 |
-| uttar_pradesh_2022 | Uttar Pradesh | 2022 |
+### What It Does
 
-## Accuracy Metrics
+1. **Pollster harmonization**: Maps variant names to canonical names
+   - "India Today-Axis My India" → "Axis My India"
+   - "P-MARQ", "Politique Marquer" → "P-Marq"
+   - "ABP-CVoter", "Times Now-CVoter" → "CVoter"
 
-For each exit poll compute:
-- `in_range_score`: per party, if actual falls within [min, max], add (actual_seats)/(max - min). Divide by number of parties. This weights accuracy by seat count—getting major parties right matters more than trivial "Others: 0" predictions.
-- `winner_correct`: did poll predict the correct winning party?
+2. **Range expansion**: Single-value predictions `[x, x]` are expanded to ranges **only if ALL of a pollster's predictions in that election are single values**. If even one prediction has a range, all their predictions are left as-is (they understand what they're doing). Expansion uses the average width of other pollsters for the same party in that election
 
-## Known Issues
+3. **Scoring**: Calculates accuracy metrics for each poll
 
-- Exit polls vs opinion polls: extract only exit polls (conducted after voting)
-- Range formats vary: "35-40", "35 to 40", "35–40" — normalize to [min, max]
-- Pollster name variations: harmonized via `pollster_harmonize.py`
+### Accuracy Metrics
 
-## Implementation Notes (Lessons Learned)
+- **intervalscore**: Winkler interval score. For each party that won ≥1 seat: if actual is in range, score = width; if outside, score = width + (2/α)×distance. Aggregated as `(1 / (total_seats × num_parties)) × sum(scores)`. Lower is better. Penalizes wide ranges and misses. Uses α=0.9 by default.
 
-### Election IDs
+- **winner_correct**: Binary (1/0) - did the poll correctly predict which party would win the most seats?
 
-**Always define election IDs explicitly** in the `ELECTIONS` dict rather than relying on LLM-generated IDs. This ensures:
-- Consistent ID format across runs
-- Reliable incremental processing (skip already-processed elections)
-- No ID format mismatches between URL and CSV
+- **abserror**: Average of `|midpoint - actual| / total_seats` across parties. Lower is better. Measures how close seat predictions were to actual results, normalized by legislature size. A value of 0.05 means predictions are off by 5% of total seats on average.
 
-### Wikipedia Table Parsing
+## Current Dataset Statistics
 
-1. **Don't rely on LLM for table parsing** - LLMs misalign columns when parsing tables from raw text. Use BeautifulSoup to parse HTML tables directly.
+- **230 exit polls** across **29 elections** (2020-2025)
+- **35 unique pollsters** (after harmonization)
+- **70.0% winner prediction accuracy**
+- **0.23 average intervalscore** (lower is better)
+- **0.0899 average abserror** (predictions off by ~9% of total seats on average)
 
-2. **Table structure varies by election:**
-   - Delhi 2025: Party headers in row 1 (row 0 just has "Polling Agency")
-   - Maharashtra 2024: Party headers in row 0 with colspan
-   - Nagaland/Meghalaya: Party headers in row 1, row 0 has empty cells
-   - Delhi 2020: Multiple exit poll tables on same page
+### Elections Covered
 
-3. **Detect exit poll tables by checking first 2 rows for:**
-   - Keywords: "polling", "agency", "pollster"
-   - Party names from `party_keywords` list
+| Year | Elections |
+|------|-----------|
+| 2025 | Delhi |
+| 2024 | Maharashtra, Jharkhand, Haryana, J&K, Andhra Pradesh, Odisha |
+| 2023 | Karnataka, Chhattisgarh, Rajasthan, MP, Telangana, Mizoram, Meghalaya, Tripura, Nagaland |
+| 2022 | Gujarat, Himachal Pradesh, Punjab, UP, Goa, Uttarakhand, Manipur |
+| 2021 | West Bengal, Assam, Tamil Nadu, Kerala |
+| 2020 | Bihar, Delhi |
 
-4. **party_keywords must include regional parties:**
-   - National: bjp, aap, inc, congress, nda, sp, bsp, tmc, ncp
-   - Maharashtra: maha, yuti, vikas
-   - South: ysrcp, tdp, kutami, dmk, aiadmk
-   - East: jmm, bjd, mgb
-   - J&K: jkpdp, jknc, india
-   - **Northeast (critical!):** npp, neda, npf, udp, aitc, ndpp, mnf, zpm, ipft, tipra, vpp
+### Wikipedia Fetching
 
-5. **Alliance/party names to preserve (don't normalize):**
-   - Maharashtra: "Maha Yuti", "Maha Vikas Aghadi"
-   - Andhra Pradesh: "YSRCP", "Kutami" (TDP-led alliance)
-   - Jharkhand: "MGB" (JMM-led alliance)
-   - J&K: "INDIA" alliance
-   - Nagaland: "NEDA" (North East Democratic Alliance)
-   - Meghalaya: "NPP" (National People's Party)
-   - General: "NDA", "BJP+", "INC+"
+- Wikipedia blocks requests without User-Agent header (403 error)
+- Use: `curl -A "Mozilla/5.0" "URL" > file.html`
+- WebFetch tool may also work but curl is more reliable
+- Downloaded files in `/tmp` may be deleted - re-download if needed
 
-### OpenAI API
+### Common Issues
 
-- **Structured Outputs:** Use `client.responses.parse()` with Pydantic models for reliable metadata extraction
-- **Model:** gpt-5.2 for metadata extraction
-- **Rate limits:** Implement exponential backoff (2^attempt + 1 seconds)
-- Wikipedia blocks requests without User-Agent header: `{"User-Agent": "ProjectName/1.0 (educational)"}`
+1. **Colspan/rowspan in tables**: Party headers often span multiple columns
+2. **Multiple exit poll tables**: Some pages have separate tables for different phases
+3. **Missing data**: Some pollsters don't predict all parties - only transcribe what's shown
+4. **Combined categories**: Sometimes "AAP+Others" is shown as one number - transcribe as shown
 
-### Incremental CSV Processing
+### Why Direct Transcription?
 
-- `get_processed_elections()` reads existing CSV and returns set of election_ids
-- `append_to_csv()` appends new results one election at a time
-- Match by exact election_id (not URL pattern matching)
-- Always use canonical election IDs from ELECTIONS dict
+The original approach used BeautifulSoup + LLM to parse HTML automatically. This had issues:
+- Artificially expanded single values into ranges (±3 seats)
+- Misaligned columns due to colspan handling
+- Inconsistent party name extraction
 
-### Pollster Name Harmonization
+Direct human-guided transcription is more accurate and transparent.
 
-Pollster names vary across elections (e.g., "India Today-Axis My India" vs "Axis My India"). Use `pollster_harmonize.py` module with:
-- `harmonize_pollster(name)` - normalize to canonical name
-- `harmonize_csv_pollsters()` - post-process CSV to harmonize all names
+## Important Reminders
 
-### Files
-
-- `extractor.py` - Main extraction script
-- `pollster_harmonize.py` - Pollster name normalization
-- `poll_accuracy.csv` - Output data (178 rows, 22 elections)
-- `.env` - OpenAI API key (not committed)
+1. **Always run `python3 process_polls.py`** after editing `exitpoll_accuracy.csv`
+2. **Never edit `exitpoll_accuracy_harmonized.csv` directly** - it will be overwritten
+3. **Check Wikipedia for exit poll tables** - they're usually in a section called "Exit polls"
+4. **Use election result date** (not voting date) for `election_date` field
