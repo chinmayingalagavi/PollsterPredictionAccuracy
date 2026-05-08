@@ -86,11 +86,23 @@ POLLSTER_ALIASES: dict[str, str] = {
     "Times Now – VETO": "Veto",
     # People's Pulse
     "People's Pulse - Codemo": "People's Pulse",
+    "Peoples Pulse": "People's Pulse",
     "South First - People's Pulse": "People's Pulse",
     "South First – People's Pulse": "People's Pulse",
     "South First-People's Pulse": "People's Pulse",
     # JVC
     "Times Now - JVC": "JVC",
+    "Times Now -JVC": "JVC",
+    # People's Insight
+    "People Insight": "People's Insight",
+    # Vote Vibe
+    "CNN-News18 - VoteVibe": "Vote Vibe",
+    "CNN News18 - VoteVibe": "Vote Vibe",
+    # Today's Chanakya misspellings / variants
+    "Todays Chanakya": "Today's Chanakya",
+    "Today's Chankya": "Today's Chanakya",
+    # CVoter source variants
+    "Manorama News - CVoter": "CVoter",
     # Zee variants
     "Zee News-BARC": "Zee News-BARC",
     "Zee News-DesignBoxed": "Zee-DesignBoxed",
@@ -136,28 +148,7 @@ def expand_single_predictions(rows: list[dict]) -> list[dict]:
         elections[eid].append(row)
 
     # Process each election
-    for election_id, election_rows in elections.items():
-        # First, check which pollsters should be expanded
-        # (only those where ALL predictions are single values)
-        pollster_should_expand: dict[str, bool] = {}
-
-        for row in election_rows:
-            pollster = row["pollster_harmonized"]
-            predictions = json.loads(row["predictions_json"])
-
-            # Check if this pollster has ANY range in this election
-            has_any_range = any(get_prediction_width(pred) > 0
-                               for pred in predictions.values())
-
-            if pollster in pollster_should_expand:
-                # If we've seen this pollster before and they had a range,
-                # keep them marked as not-to-expand
-                if has_any_range:
-                    pollster_should_expand[pollster] = False
-            else:
-                # First time seeing this pollster in this election
-                pollster_should_expand[pollster] = not has_any_range
-
+    for _election_id, election_rows in elections.items():
         # Calculate average width per party (excluding single-value predictions)
         party_widths: dict[str, list[int]] = {}
 
@@ -186,11 +177,10 @@ def expand_single_predictions(rows: list[dict]) -> list[dict]:
 
         # Expand single-value predictions (only for pollsters that should be expanded)
         for row in election_rows:
-            pollster = row["pollster_harmonized"]
             predictions = json.loads(row["predictions_json"])
             harmonized = {}
 
-            should_expand = pollster_should_expand.get(pollster, False)
+            should_expand = all(is_single_value(pred) for pred in predictions.values())
 
             for party, pred in predictions.items():
                 if should_expand and is_single_value(pred):
@@ -222,31 +212,35 @@ def calculate_scores(row: dict) -> dict:
     predictions = json.loads(row["predictions_json_harmonized"])
     actual = json.loads(row["actual_results_json"])
     total_seats = int(row["total_seats"])
+    score_parties = list(predictions.keys())
+    score_parties.extend(
+        party for party, seats in actual.items()
+        if party not in predictions and seats >= 1
+    )
 
     # Calculate intervalscore (Winkler interval score)
     # Only score parties that won at least 1 seat
     score_sum = 0
     num_parties = 0
 
-    for party, pred in predictions.items():
-        if party in actual:
-            actual_seats = actual[party]
-            if actual_seats >= 1:  # Only parties in W_e (won at least 1 seat)
-                l_i, u_i = pred
-                width = u_i - l_i
+    for party in score_parties:
+        actual_seats = actual.get(party, 0)
+        if actual_seats >= 1:  # Only parties in W_e (won at least 1 seat)
+            l_i, u_i = predictions.get(party, [0, 0])
+            width = u_i - l_i
 
-                if l_i <= actual_seats <= u_i:
-                    # In range: score = width
-                    score_i = width
-                elif actual_seats < l_i:
-                    # Below range: score = width + (2/alpha) * (l_i - y_i)
-                    score_i = width + (2 / ALPHA) * (l_i - actual_seats)
-                else:
-                    # Above range: score = width + (2/alpha) * (y_i - u_i)
-                    score_i = width + (2 / ALPHA) * (actual_seats - u_i)
+            if l_i <= actual_seats <= u_i:
+                # In range: score = width
+                score_i = width
+            elif actual_seats < l_i:
+                # Below range: score = width + (2/alpha) * (l_i - y_i)
+                score_i = width + (2 / ALPHA) * (l_i - actual_seats)
+            else:
+                # Above range: score = width + (2/alpha) * (y_i - u_i)
+                score_i = width + (2 / ALPHA) * (actual_seats - u_i)
 
-                score_sum += score_i
-                num_parties += 1
+            score_sum += score_i
+            num_parties += 1
 
     # Normalize: (1 / (T_e * P_e)) * sum(score_i)
     if num_parties > 0:
@@ -259,25 +253,38 @@ def calculate_scores(row: dict) -> dict:
     abserror_sum = 0
     abserror_count = 0
 
-    for party, pred in predictions.items():
-        if party in actual:
-            actual_seats = actual[party]
-            midpoint = (pred[0] + pred[1]) / 2
-            normalized_error = abs(midpoint - actual_seats) / total_seats
-            abserror_sum += normalized_error
-            abserror_count += 1
+    for party in score_parties:
+        actual_seats = actual.get(party, 0)
+        pred = predictions.get(party, [0, 0])
+        midpoint = (pred[0] + pred[1]) / 2
+        normalized_error = abs(midpoint - actual_seats) / total_seats
+        abserror_sum += normalized_error
+        abserror_count += 1
 
     abserror = abserror_sum / abserror_count if abserror_count > 0 else 0
 
     # Calculate winner prediction
-    # Predicted winner: party with highest midpoint
-    predicted_winner = max(predictions.keys(),
-                          key=lambda p: (predictions[p][0] + predictions[p][1]) / 2)
+    # Predicted winner: party/parties with highest midpoint
+    prediction_midpoints = {
+        party: (pred[0] + pred[1]) / 2
+        for party, pred in predictions.items()
+    }
+    max_prediction = max(prediction_midpoints.values())
+    predicted_winners = [
+        party for party in predictions.keys()
+        if prediction_midpoints[party] == max_prediction
+    ]
 
-    # Actual winner: party with most seats
-    actual_winner = max(actual.keys(), key=lambda p: actual[p])
+    # Actual winner: party/parties with most seats
+    max_actual = max(actual.values())
+    actual_winners = [
+        party for party in actual.keys()
+        if actual[party] == max_actual
+    ]
 
-    winner_correct = 1 if predicted_winner == actual_winner else 0
+    predicted_winner = "/".join(predicted_winners)
+    actual_winner = "/".join(actual_winners)
+    winner_correct = 1 if set(predicted_winners) & set(actual_winners) else 0
 
     row["intervalscore"] = round(intervalscore, 4)
     row["winner_correct"] = winner_correct
@@ -330,7 +337,7 @@ def main():
     ]
 
     with open(output_file, "w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
 
@@ -365,8 +372,8 @@ def main():
         pollster_data[p]["intervalscore_sum"] += row["intervalscore"]
         pollster_data[p]["abserror_sum"] += row["abserror"]
 
-    # Filter to min 5 polls
-    min_polls = 5
+    # Filter to pollsters with enough observations for a noisy but useful comparison.
+    min_polls = 4
     qualified = {p: d for p, d in pollster_data.items() if d["polls"] >= min_polls}
 
     # Best by interval score
