@@ -373,7 +373,7 @@ def main():
         pollster_data[p]["abserror_sum"] += row["abserror"]
 
     # Filter to pollsters with enough observations for a noisy but useful comparison.
-    min_polls = 4
+    min_polls = 5
     qualified = {p: d for p, d in pollster_data.items() if d["polls"] >= min_polls}
 
     # Best by interval score

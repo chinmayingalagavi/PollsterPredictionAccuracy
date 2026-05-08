@@ -15,24 +15,24 @@ If there are any errors, let me know.
 
 **Dataset**: 288 exit polls across 35 state legislative assembly elections (2020-2026)
 
-## Best Pollsters by Interval Score (min 4 polls)
+## Best Pollsters by Interval Score (min 5 polls)
 
 | Rank | Pollster | Polls | Avg intervalscore |
 |------|----------|-------|-------------------|
 | 1 | Today's Chanakya | 21 | 0.240 |
 | 2 | Poll of Polls | 12 | 0.245 |
 | 3 | Axis My India | 33 | 0.246 |
-| 4 | Zee-DesignBoxed | 4 | 0.260 |
-| 5 | CNX | 14 | 0.274 |
-| 6 | Veto | 4 | 0.281 |
-| 7 | CVoter | 23 | 0.301 |
-| 8 | Jan Ki Baat | 18 | 0.309 |
-| 9 | Polstrat | 12 | 0.341 |
-| 10 | P-Marq | 23 | 0.355 |
+| 4 | CNX | 14 | 0.274 |
+| 5 | CVoter | 23 | 0.301 |
+| 6 | Jan Ki Baat | 18 | 0.309 |
+| 7 | Polstrat | 12 | 0.341 |
+| 8 | P-Marq | 23 | 0.355 |
+| 9 | People's Insight | 12 | 0.401 |
+| 10 | Matrize | 21 | 0.423 |
 
 Lower is better. The Winkler interval score penalizes both wide ranges and predictions that miss the actual result. This is my preferred metric.
 
-## Best Pollsters by Abserror (min 4 polls)
+## Best Pollsters by Abserror (min 5 polls)
 
 | Rank | Pollster | Polls | Avg abserror |
 |------|----------|-------|--------------|
@@ -40,16 +40,16 @@ Lower is better. The Winkler interval score penalizes both wide ranges and predi
 | 2 | Today's Chanakya | 21 | 0.0654 |
 | 3 | Poll of Polls | 12 | 0.0696 |
 | 4 | CNX | 14 | 0.0729 |
-| 5 | Veto | 4 | 0.0752 |
-| 6 | Zee-DesignBoxed | 4 | 0.0776 |
-| 7 | CVoter | 23 | 0.0811 |
-| 8 | Jan Ki Baat | 18 | 0.0811 |
-| 9 | Polstrat | 12 | 0.0880 |
-| 10 | P-Marq | 23 | 0.0896 |
+| 5 | CVoter | 23 | 0.0811 |
+| 6 | Jan Ki Baat | 18 | 0.0811 |
+| 7 | Polstrat | 12 | 0.0880 |
+| 8 | P-Marq | 23 | 0.0896 |
+| 9 | People's Insight | 12 | 0.1021 |
+| 10 | Matrize | 21 | 0.1058 |
 
 Lower is better. Measures average distance to correct number of seats |midpoint - actual| / total_seats across parties.
 
-## Best Pollsters by Winner Prediction (min 4 polls)
+## Best Pollsters by Winner Prediction (min 5 polls)
 
 | Rank | Pollster | Polls | Winner Correct |
 |------|----------|-------|----------------|
@@ -61,8 +61,8 @@ Lower is better. Measures average distance to correct number of seats |midpoint 
 | 6 | CNX | 14 | 78.6% |
 | 7 | JVC | 9 | 77.8% |
 | 8 | Polstrat | 12 | 75.0% |
-| 9 | Veto | 4 | 75.0% |
-| 10 | Zee-DesignBoxed | 4 | 75.0% |
+| 9 | Matrize | 21 | 71.4% |
+| 10 | Chanakya Strategies | 6 | 66.7% |
 
 Winner prediction = correctly predicting the party/alliance that would win the most seats.
 
