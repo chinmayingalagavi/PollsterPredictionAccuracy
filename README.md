@@ -19,7 +19,7 @@ If there are any errors, let me know.
 
 | Rank | Pollster | Polls | Avg intervalscore |
 |------|----------|-------|-------------------|
-| 1 | Today's Chanakya | 21 | 0.240 |
+| 1 | Today's Chanakya | 21 | 0.241 |
 | 2 | Poll of Polls | 12 | 0.245 |
 | 3 | Axis My India | 33 | 0.246 |
 | 4 | CNX | 14 | 0.274 |
@@ -27,7 +27,7 @@ If there are any errors, let me know.
 | 6 | Jan Ki Baat | 18 | 0.309 |
 | 7 | Polstrat | 12 | 0.341 |
 | 8 | P-Marq | 23 | 0.355 |
-| 9 | People's Insight | 12 | 0.401 |
+| 9 | People's Insight | 12 | 0.402 |
 | 10 | Matrize | 21 | 0.423 |
 
 Lower is better. The Winkler interval score penalizes both wide ranges and predictions that miss the actual result. This is my preferred metric.
@@ -37,15 +37,15 @@ Lower is better. The Winkler interval score penalizes both wide ranges and predi
 | Rank | Pollster | Polls | Avg abserror |
 |------|----------|-------|--------------|
 | 1 | Axis My India | 33 | 0.0640 |
-| 2 | Today's Chanakya | 21 | 0.0654 |
+| 2 | Today's Chanakya | 21 | 0.0655 |
 | 3 | Poll of Polls | 12 | 0.0696 |
 | 4 | CNX | 14 | 0.0729 |
 | 5 | CVoter | 23 | 0.0811 |
 | 6 | Jan Ki Baat | 18 | 0.0811 |
 | 7 | Polstrat | 12 | 0.0880 |
-| 8 | P-Marq | 23 | 0.0896 |
-| 9 | People's Insight | 12 | 0.1021 |
-| 10 | Matrize | 21 | 0.1058 |
+| 8 | P-Marq | 23 | 0.0897 |
+| 9 | People's Insight | 12 | 0.1023 |
+| 10 | Matrize | 21 | 0.1059 |
 
 Lower is better. Measures average distance to correct number of seats |midpoint - actual| / total_seats across parties.
 
@@ -112,8 +112,6 @@ Aggregated as `(1 / (total_seats × num_parties)) × sum(scores)`. Lower is bett
 | 2022 | Gujarat, Himachal Pradesh, Punjab, UP, Goa, Uttarakhand, Manipur |
 | 2021 | West Bengal, Assam, Tamil Nadu, Kerala |
 | 2020 | Bihar, Delhi |
-
-Note: West Bengal 2026 is provisional. The Falta seat was still pending when this dataset was updated, so the current file assumes Falta goes to AITC+ and records the actual result as BJP 207, AITC+ 81, Others 6. This may need to be changed after the official Falta result is announced.
 
 ### Files
 

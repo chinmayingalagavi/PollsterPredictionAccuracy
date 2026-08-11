@@ -8,10 +8,10 @@ Measure how accurately Indian exit polls predict election outcomes, identify whi
 
 ## Files
 
-| File | Description | Editable by Claude? |
+| File | Description | Editable by Codex? |
 |------|-------------|---------------------|
 | `README.md` | Public-facing results and methodology | Yes |
-| `CLAUDE.md` | This documentation (for Claude) | Yes |
+| `AGENTS.md` | This documentation (for Codex) | Yes |
 | `exitpoll_accuracy.csv` | Raw transcribed exit poll data (288 rows) | **Yes - source of truth** |
 | `process_polls.py` | Processing script to generate harmonized CSV | Yes |
 | `exitpoll_accuracy_harmonized.csv` | Generated output with scores | **No - regenerate instead** |
