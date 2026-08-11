@@ -329,6 +329,7 @@ def main():
         "predictions_json",
         "predictions_json_harmonized",
         "actual_results_json",
+        "source",
         "intervalscore",
         "winner_correct",
         "abserror",

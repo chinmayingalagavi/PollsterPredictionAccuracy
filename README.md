@@ -4,31 +4,31 @@ There are a lot of pollsters in India that present their projections of election
 
 This was viberesearched and vibecoded with Claude Code Opus 4.5. I used it both for research/scraping and for processing. All errors are either Claude's or mine.
 
-See ```exitpoll_accuracy.csv``` for raw data scraped from Wikipedia.
+See ```exitpoll_accuracy.csv``` for raw data, transcribed primarily from Wikipedia and supplemented with additional exit polls found via news archives and Wayback Machine snapshots (see `source` column for the citation on each row).
 
 ## Notes
-I had to manually do some harmonizing, so there may be errors. Not all pollsters' forecasts may have been logged on Wikipedia, so they would not show up here.
+I had to manually do some harmonizing, so there may be errors. Not all pollsters' forecasts may have been logged on Wikipedia, so they would not show up here — I've since gone back and added a batch of pollsters that Wikipedia missed or later trimmed, each backed by a reputable news source or an archived Wikipedia revision (see the `source` column).
 
 If there are any errors, let me know.
 
 ## What are exit polls? Exit polls are surveys conducted immediately after voters leave polling stations on election day. They are published after voting ends but before official results are announced. This dataset measures how accurately these exit polling agencies predicted the actual election outcomes.
 
-**Dataset**: 288 exit polls across 35 state legislative assembly elections (2020-2026)
+**Dataset**: 341 exit polls across 35 state legislative assembly elections (2020-2026)
 
 ## Best Pollsters by Interval Score (min 5 polls)
 
 | Rank | Pollster | Polls | Avg intervalscore |
 |------|----------|-------|-------------------|
 | 1 | Today's Chanakya | 21 | 0.241 |
-| 2 | Poll of Polls | 12 | 0.245 |
-| 3 | Axis My India | 33 | 0.246 |
-| 4 | CNX | 14 | 0.274 |
-| 5 | CVoter | 23 | 0.301 |
-| 6 | Jan Ki Baat | 18 | 0.309 |
-| 7 | Polstrat | 12 | 0.341 |
-| 8 | P-Marq | 23 | 0.355 |
-| 9 | People's Insight | 12 | 0.402 |
-| 10 | Matrize | 21 | 0.423 |
+| 2 | Poll of Polls | 12 | 0.244 |
+| 3 | Axis My India | 34 | 0.259 |
+| 4 | Jan Ki Baat | 21 | 0.303 |
+| 5 | CNX | 17 | 0.308 |
+| 6 | CVoter | 24 | 0.327 |
+| 7 | Zee-DesignBoxed | 5 | 0.342 |
+| 8 | Polstrat | 14 | 0.351 |
+| 9 | P-Marq | 27 | 0.366 |
+| 10 | People's Insight | 13 | 0.388 |
 
 Lower is better. The Winkler interval score penalizes both wide ranges and predictions that miss the actual result. This is my preferred metric.
 
@@ -36,16 +36,16 @@ Lower is better. The Winkler interval score penalizes both wide ranges and predi
 
 | Rank | Pollster | Polls | Avg abserror |
 |------|----------|-------|--------------|
-| 1 | Axis My India | 33 | 0.0640 |
-| 2 | Today's Chanakya | 21 | 0.0655 |
+| 1 | Today's Chanakya | 21 | 0.0655 |
+| 2 | Axis My India | 34 | 0.0676 |
 | 3 | Poll of Polls | 12 | 0.0696 |
-| 4 | CNX | 14 | 0.0729 |
-| 5 | CVoter | 23 | 0.0811 |
-| 6 | Jan Ki Baat | 18 | 0.0811 |
-| 7 | Polstrat | 12 | 0.0880 |
-| 8 | P-Marq | 23 | 0.0897 |
-| 9 | People's Insight | 12 | 0.1023 |
-| 10 | Matrize | 21 | 0.1059 |
+| 4 | CNX | 17 | 0.0780 |
+| 5 | Jan Ki Baat | 21 | 0.0798 |
+| 6 | CVoter | 24 | 0.0880 |
+| 7 | Sudarshan News | 5 | 0.0897 |
+| 8 | Polstrat | 14 | 0.0911 |
+| 9 | Zee-DesignBoxed | 5 | 0.0914 |
+| 10 | P-Marq | 27 | 0.0943 |
 
 Lower is better. Measures average distance to correct number of seats |midpoint - actual| / total_seats across parties.
 
@@ -53,16 +53,16 @@ Lower is better. Measures average distance to correct number of seats |midpoint 
 
 | Rank | Pollster | Polls | Winner Correct |
 |------|----------|-------|----------------|
-| 1 | Axis My India | 33 | 84.8% |
-| 2 | People's Insight | 12 | 83.3% |
-| 3 | Poll of Polls | 12 | 83.3% |
-| 4 | P-Marq | 23 | 82.6% |
-| 5 | Today's Chanakya | 21 | 81.0% |
-| 6 | CNX | 14 | 78.6% |
-| 7 | JVC | 9 | 77.8% |
-| 8 | Polstrat | 12 | 75.0% |
-| 9 | Matrize | 21 | 71.4% |
-| 10 | Chanakya Strategies | 6 | 66.7% |
+| 1 | People's Insight | 13 | 84.6% |
+| 2 | Poll of Polls | 12 | 83.3% |
+| 3 | Axis My India | 34 | 82.4% |
+| 4 | Today's Chanakya | 21 | 81.0% |
+| 5 | Sudarshan News | 5 | 80.0% |
+| 6 | Zeenia | 5 | 80.0% |
+| 7 | Polstrat | 14 | 78.6% |
+| 8 | JVC | 9 | 77.8% |
+| 9 | P-Marq | 27 | 77.8% |
+| 10 | CNX | 17 | 76.5% |
 
 Winner prediction = correctly predicting the party/alliance that would win the most seats.
 
@@ -72,10 +72,13 @@ Winner prediction = correctly predicting the party/alliance that would win the m
 
 ### Data Collection
 
-Exit poll predictions were manually transcribed from Wikipedia pages for each state election. Done manually by Claude! Each row contains:
+Exit poll predictions were manually transcribed, primarily from Wikipedia pages for each state election, and supplemented with additional pollsters found via news archives and archived (Wayback Machine) Wikipedia revisions when the live Wikipedia table had missed or since dropped a pollster. Done manually by Claude! Each row contains:
 - The pollster name (e.g., "India Today-Axis My India")
 - Seat predictions as ranges `[min, max]` for each party
 - Actual election results
+- A `source` citation — either the Wikipedia page it was transcribed from, or the specific news article / archived revision it was found in
+
+Every added row is required to have a citable, reputable, dated-before-results source (an established news outlet, Wikipedia, or a recognized pollster's own release) — single-sourced claims from unknown one-off "pollsters," tweets, or self-published pages are excluded, since a number of fabricated or low-credibility "exit polls" circulate online.
 
 ### Processing
 
@@ -113,6 +116,10 @@ Aggregated as `(1 / (total_seats × num_parties)) × sum(scores)`. Lower is bett
 | 2021 | West Bengal, Assam, Tamil Nadu, Kerala |
 | 2020 | Bihar, Delhi |
 
+### Corrections
+
+Rajasthan 2023's P-Marq row originally showed INC+ as [69, 91], transcribed from Wikipedia. Republic World's own primary article (the pollster's original publisher) states INC+ [69, 81]; corrected to match the primary source, noted in that row's `source` column.
+
 ### Files
 
 | File | Description |
@@ -123,4 +130,4 @@ Aggregated as `(1 / (total_seats × num_parties)) × sum(scores)`. Lower is bett
 
 ---
 
-*Data source: Wikipedia exit poll tables for Indian state legislative assembly elections.*
+*Data sources: Wikipedia exit poll tables plus additional reputable news sources for Indian state legislative assembly elections — see the `source` column in `exitpoll_accuracy.csv` for the citation on each row.*

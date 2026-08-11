@@ -12,7 +12,7 @@ Measure how accurately Indian exit polls predict election outcomes, identify whi
 |------|-------------|---------------------|
 | `README.md` | Public-facing results and methodology | Yes |
 | `CLAUDE.md` | This documentation (for Claude) | Yes |
-| `exitpoll_accuracy.csv` | Raw transcribed exit poll data (288 rows) | **Yes - source of truth** |
+| `exitpoll_accuracy.csv` | Raw transcribed exit poll data (341 rows) | **Yes - source of truth** |
 | `process_polls.py` | Processing script to generate harmonized CSV | Yes |
 | `exitpoll_accuracy_harmonized.csv` | Generated output with scores | **No - regenerate instead** |
 | `old/` | Archived original code-based extraction | No |
@@ -22,13 +22,18 @@ Measure how accurately Indian exit polls predict election outcomes, identify whi
 ### exitpoll_accuracy.csv (input)
 
 ```csv
-election_id,election_name,election_date,state,total_seats,pollster,predictions_json,actual_results_json
+election_id,election_name,election_date,state,total_seats,pollster,predictions_json,actual_results_json,source
 ```
 
 - **election_id**: Unique identifier like `delhi_2025`, `maharashtra_2024`
 - **election_date**: Date results were announced (YYYY-MM-DD)
 - **predictions_json**: `{"Party": [min, max], ...}` - single values as `[x, x]`
 - **actual_results_json**: `{"Party": seats, ...}`
+- **source**: Citation for this row. For rows transcribed from Wikipedia's exit-poll table: `Wikipedia: {election_name}, {url}`. For rows found via other reputable outlets or an archived/Wayback Wikipedia revision: the outlet name and URL(s), with a note if it's an archived revision. See "Sourcing bar" below.
+
+### Sourcing bar for new rows
+
+Every row needs a citable, reputable, dated-before-results source. Do not add a row on the strength of a pollster's own release alone unless that pollster is already an established/recurring name in this dataset or a well-known media organization's own in-house poll — many "exit poll" names circulating online are one-off or fabricated. Acceptable sources: established news organizations (India Today, ABP, NDTV, Times Now, Hindustan Times, Indian Express, Deccan Herald, LiveMint, News18, Zee News, Republic, TV9, The Tribune, ThePrint, reputable regional-language mastheads), Wikipedia (live or archived revision), or a recognized pollster's own official release. Reject: tweets, self-published pages, content-farm/aggregator blogs, and anything published after results were announced. When two reputable sources conflict and can't be reconciled, don't add the row — flag it instead.
 
 ### exitpoll_accuracy_harmonized.csv (output)
 
