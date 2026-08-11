@@ -12,7 +12,7 @@ Measure how accurately Indian exit polls predict election outcomes, identify whi
 |------|-------------|---------------------|
 | `README.md` | Public-facing results and methodology | Yes |
 | `AGENTS.md` | This documentation (for Codex) | Yes |
-| `exitpoll_accuracy.csv` | Raw transcribed exit poll data (341 rows) | **Yes - source of truth** |
+| `exitpoll_accuracy.csv` | Raw transcribed exit poll data (329 rows) | **Yes - source of truth** |
 | `process_polls.py` | Processing script to generate harmonized CSV | Yes |
 | `exitpoll_accuracy_harmonized.csv` | Generated output with scores | **No - regenerate instead** |
 | `old/` | Archived original code-based extraction | No |
@@ -34,6 +34,8 @@ election_id,election_name,election_date,state,total_seats,pollster,predictions_j
 ### Sourcing bar for new rows
 
 Every row needs a citable, reputable, dated-before-results source. Do not add a row on the strength of a pollster's own release alone unless that pollster is already an established/recurring name in this dataset or a well-known media organization's own in-house poll — many "exit poll" names circulating online are one-off or fabricated. Acceptable sources: established news organizations (India Today, ABP, NDTV, Times Now, Hindustan Times, Indian Express, Deccan Herald, LiveMint, News18, Zee News, Republic, TV9, The Tribune, ThePrint, reputable regional-language mastheads), Wikipedia (live or archived revision), or a recognized pollster's own official release. Reject: tweets, self-published pages, content-farm/aggregator blogs, and anything published after results were announced. When two reputable sources conflict and can't be reconciled, don't add the row — flag it instead.
+
+**Never add "Poll of Polls"** (a recurring name in Wikipedia's exit-poll tables, most likely NDTV's own aggregate feature) as a pollster. Its predictions are always point values, not ranges, and checking them against the other pollsters listed for the same election shows they're essentially the average of those other pollsters' midpoints — it isn't an independent survey, and averaging structurally reduces error regardless of skill, which would make it look artificially strong in the rankings. 12 such rows were removed from this dataset for this reason.
 
 ### exitpoll_accuracy_harmonized.csv (output)
 
@@ -99,7 +101,7 @@ Run: `python3 process_polls.py`
 
 ### Accuracy Metrics
 
-- **intervalscore**: Winkler interval score. For each party that won ≥1 seat: if actual is in range, score = width; if outside, score = width + (2/α)×distance. Aggregated as `(1 / (total_seats × num_parties)) × sum(scores)`. Lower is better. Penalizes wide ranges and misses. Uses α=0.5 by default.
+- **intervalscore**: Winkler interval score. Scores a party if it won ≥1 seat (predicted or omitted), or if the poll predicted a nonzero floor for it and it won 0 seats (a genuine miss). A hedge with floor 0 that correctly gets 0 seats isn't scored, to avoid diluting the average. If actual is in range, score = width; if outside, score = width + (2/α)×distance. Aggregated as `(1 / (total_seats × num_parties)) × sum(scores)`. Lower is better. Uses α=0.5 by default.
 
 - **winner_correct**: Binary (1/0) - did the poll correctly predict which party would win the most seats?
 
@@ -130,6 +132,7 @@ Run: `python3 process_polls.py`
 2. **Multiple exit poll tables**: Some pages have separate tables for different phases
 3. **Missing data**: Some pollsters don't predict all parties - only transcribe what's shown
 4. **Combined categories**: Sometimes "AAP+Others" is shown as one number - transcribe as shown
+5. **Party/alliance naming must match the election's existing key names**: `predictions_json` is matched against `actual_results_json` by exact key, with no aliasing (unlike pollster names). If a source uses a different label for the same alliance already used elsewhere in that `election_id` (e.g. a news article says "Congress" but this election's actual/other rows use "INC+" or "UPA"), rename it to match the existing key — don't introduce a new label. Check other rows for the same `election_id` first. `process_polls.py` prints a warning for any predicted party key absent from that election's `actual_results_json` (excluding "Others") — treat that as a likely naming mismatch to fix, not a new party, unless it's genuinely a finer-grained category the actual results don't itemize.
 
 ### Why Direct Transcription?
 

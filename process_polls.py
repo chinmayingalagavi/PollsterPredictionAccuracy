@@ -204,7 +204,12 @@ def calculate_scores(row: dict) -> dict:
     Calculate accuracy scores for a poll.
 
     - intervalscore: Winkler interval score, normalized by total seats and party count.
-      Lower is better. Penalizes wide ranges and misses outside the range.
+      Lower is better. Penalizes wide ranges and misses outside the range. Scored parties
+      are: (a) every party that actually won >=1 seat, whether predicted or omitted, and
+      (b) any party the poll predicted a nonzero floor for (i.e. confidently called it a
+      seat-winner) that ended up with zero actual seats - a genuine miss. Parties hedged
+      with a floor of zero that correctly got zero seats are excluded entirely, so they
+      don't dilute the score with easy "free" points.
     - winner_correct: Did the poll predict the party with most seats correctly?
     - abserror: Average of |midpoint - actual| / total_seats across parties.
       Lower is better. Normalized by legislature size, not party size.
@@ -219,28 +224,32 @@ def calculate_scores(row: dict) -> dict:
     )
 
     # Calculate intervalscore (Winkler interval score)
-    # Only score parties that won at least 1 seat
     score_sum = 0
     num_parties = 0
 
     for party in score_parties:
         actual_seats = actual.get(party, 0)
-        if actual_seats >= 1:  # Only parties in W_e (won at least 1 seat)
-            l_i, u_i = predictions.get(party, [0, 0])
-            width = u_i - l_i
+        l_i, u_i = predictions.get(party, [0, 0])
 
-            if l_i <= actual_seats <= u_i:
-                # In range: score = width
-                score_i = width
-            elif actual_seats < l_i:
-                # Below range: score = width + (2/alpha) * (l_i - y_i)
-                score_i = width + (2 / ALPHA) * (l_i - actual_seats)
-            else:
-                # Above range: score = width + (2/alpha) * (y_i - u_i)
-                score_i = width + (2 / ALPHA) * (actual_seats - u_i)
+        if actual_seats < 1 and l_i <= 0:
+            # Hedged prediction (floor of 0) that correctly got 0 seats - not scored,
+            # to avoid diluting the average with easy, uninformative "misses that
+            # weren't really predictions of anything."
+            continue
 
-            score_sum += score_i
-            num_parties += 1
+        width = u_i - l_i
+        if l_i <= actual_seats <= u_i:
+            # In range: score = width
+            score_i = width
+        elif actual_seats < l_i:
+            # Below range: score = width + (2/alpha) * (l_i - y_i)
+            score_i = width + (2 / ALPHA) * (l_i - actual_seats)
+        else:
+            # Above range: score = width + (2/alpha) * (y_i - u_i)
+            score_i = width + (2 / ALPHA) * (actual_seats - u_i)
+
+        score_sum += score_i
+        num_parties += 1
 
     # Normalize: (1 / (T_e * P_e)) * sum(score_i)
     if num_parties > 0:
@@ -295,6 +304,41 @@ def calculate_scores(row: dict) -> dict:
     return row
 
 
+def check_party_key_consistency(rows: list[dict]) -> None:
+    """
+    Warn about predictions_json party/alliance keys that don't appear in that
+    election's actual_results_json (e.g. a poll using "INC" when this election's
+    actual results use "INC+" or "UPA"). Scoring matches predictions to actual
+    results by exact key - a name mismatch like this silently corrupts scoring
+    (the party looks like it "got 0 actual seats" instead of matching correctly),
+    and nothing else in this pipeline catches it. "Others" is always allowed as a
+    catch-all even when absent from actual_results_json.
+    """
+    actual_keys_by_election: dict[str, set[str]] = {}
+    for row in rows:
+        eid = row["election_id"]
+        if eid not in actual_keys_by_election:
+            actual_keys_by_election[eid] = set(json.loads(row["actual_results_json"]).keys())
+
+    warnings = []
+    for row in rows:
+        actual_keys = actual_keys_by_election[row["election_id"]]
+        predicted_keys = set(json.loads(row["predictions_json"]).keys())
+        unmatched = {k for k in (predicted_keys - actual_keys) if k.lower() != "others"}
+        if unmatched:
+            warnings.append((row["election_id"], row["pollster"], sorted(unmatched), sorted(actual_keys)))
+
+    if warnings:
+        print(f"\n{'!' * 60}")
+        print(f"WARNING: {len(warnings)} row(s) predict a party/alliance name not")
+        print("found in that election's actual_results_json. Check for a naming")
+        print("mismatch (e.g. \"INC\" vs \"INC+\"/\"UPA\") rather than a genuinely new party.")
+        print(f"{'!' * 60}")
+        for eid, pollster, unmatched, actual_keys in warnings:
+            print(f"  {eid} | {pollster} | unmatched: {unmatched} | actual keys: {actual_keys}")
+        print()
+
+
 def main():
     input_file = Path("exitpoll_accuracy.csv")
     output_file = Path("exitpoll_accuracy_harmonized.csv")
@@ -305,6 +349,8 @@ def main():
         rows = list(reader)
 
     print(f"Read {len(rows)} rows from {input_file}")
+
+    check_party_key_consistency(rows)
 
     # Step 1: Harmonize pollster names
     for row in rows:
