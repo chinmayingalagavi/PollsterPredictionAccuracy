@@ -29,6 +29,13 @@ If there are any errors, let me know.
 | 8 | Polstrat | 14 | 0.351 |
 | 9 | People's Insight | 13 | 0.382 |
 | 10 | Matrize | 21 | 0.421 |
+| 11 | ETG | 19 | 0.422 |
+| 12 | Sudarshan News | 5 | 0.440 |
+| 13 | Dainik Bhaskar | 10 | 0.476 |
+| 14 | JVC | 9 | 0.496 |
+| 15 | People's Pulse | 14 | 0.517 |
+| 16 | Zeenia | 5 | 0.570 |
+| 17 | Chanakya Strategies | 8 | 0.617 |
 
 Lower is better. The Winkler interval score penalizes both wide ranges and predictions that miss the actual result. This is my preferred metric.
 
@@ -46,6 +53,13 @@ Lower is better. The Winkler interval score penalizes both wide ranges and predi
 | 8 | Zee-DesignBoxed | 5 | 0.0914 |
 | 9 | P-Marq | 27 | 0.0943 |
 | 10 | People's Insight | 13 | 0.0993 |
+| 11 | ETG | 19 | 0.1004 |
+| 12 | Matrize | 21 | 0.1059 |
+| 13 | JVC | 9 | 0.1230 |
+| 14 | Dainik Bhaskar | 10 | 0.1274 |
+| 15 | People's Pulse | 14 | 0.1332 |
+| 16 | Zeenia | 5 | 0.1381 |
+| 17 | Chanakya Strategies | 8 | 0.1554 |
 
 Lower is better. Measures average distance to correct number of seats |midpoint - actual| / total_seats across parties.
 
@@ -63,6 +77,13 @@ Lower is better. Measures average distance to correct number of seats |midpoint 
 | 8 | P-Marq | 27 | 77.8% |
 | 9 | CNX | 17 | 76.5% |
 | 10 | Chanakya Strategies | 8 | 75.0% |
+| 11 | Matrize | 21 | 71.4% |
+| 12 | Jan Ki Baat | 21 | 71.4% |
+| 13 | ETG | 19 | 63.2% |
+| 14 | CVoter | 24 | 62.5% |
+| 15 | Zee-DesignBoxed | 5 | 60.0% |
+| 16 | People's Pulse | 14 | 57.1% |
+| 17 | Dainik Bhaskar | 10 | 50.0% |
 
 Winner prediction = correctly predicting the party/alliance that would win the most seats.
 

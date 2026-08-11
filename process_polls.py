@@ -433,7 +433,7 @@ def main():
     )
     print(f"{'Rank':<6}{'Pollster':<25}{'Polls':<8}{'Avg Score':<10}")
     print("-" * 49)
-    for i, (pollster, data) in enumerate(by_interval[:10], 1):
+    for i, (pollster, data) in enumerate(by_interval, 1):
         avg = data["intervalscore_sum"] / data["polls"]
         print(f"{i:<6}{pollster:<25}{data['polls']:<8}{avg:.3f}")
 
@@ -447,7 +447,7 @@ def main():
     )
     print(f"{'Rank':<6}{'Pollster':<25}{'Polls':<8}{'Avg Abserror':<12}")
     print("-" * 51)
-    for i, (pollster, data) in enumerate(by_abserror[:10], 1):
+    for i, (pollster, data) in enumerate(by_abserror, 1):
         avg = data["abserror_sum"] / data["polls"]
         print(f"{i:<6}{pollster:<25}{data['polls']:<8}{avg:.4f}")
 
@@ -462,7 +462,7 @@ def main():
     )
     print(f"{'Rank':<6}{'Pollster':<25}{'Polls':<8}{'Winner %':<10}")
     print("-" * 49)
-    for i, (pollster, data) in enumerate(by_winner[:10], 1):
+    for i, (pollster, data) in enumerate(by_winner, 1):
         pct = 100 * data["winner_correct"] / data["polls"]
         print(f"{i:<6}{pollster:<25}{data['polls']:<8}{pct:.1f}%")
 
